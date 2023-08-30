@@ -1,3 +1,20 @@
+#![deny(clippy::correctness)]
+#![deny(clippy::suspicious)]
+#![deny(clippy::complexity)]
+#![deny(clippy::perf)]
+#![deny(clippy::style)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::cargo)]
+#![allow(deprecated)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::unused_async)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::enum_glob_use)]
+#![allow(clippy::doc_markdown)]
+#![deny(clippy::too_many_lines)]
+#![allow(clippy::multiple_crate_versions)]
+#![allow(clippy::cargo_common_metadata)]
+
 pub mod helpers;
 mod instructions;
 mod memory;
@@ -18,15 +35,12 @@ fn main() {
     let mut reader = BufReader::new(input);
 
     loop {
-        let instruction_byte = match reader.read_u8() {
-            Ok(byte) => byte,
-            Err(_) => {
+        let Ok(instruction_byte) = reader.read_u8() else {
                 break;
-            }
-        };
+            };
 
         let instruction = Instructions::from((&mut reader, instruction_byte));
 
-        println!("{}", instruction);
+        println!("{instruction}");
     }
 }

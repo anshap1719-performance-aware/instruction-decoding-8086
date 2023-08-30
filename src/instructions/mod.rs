@@ -3,9 +3,9 @@ mod mov;
 use crate::prelude::*;
 use crate::{bit_match, compute_mask, compute_val};
 use mov::*;
-use std::fmt::{Display, Formatter, Pointer};
+use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::BufReader;
 
 pub enum Instructions {
     Mov(MovInstruction),

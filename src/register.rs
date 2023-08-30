@@ -25,7 +25,7 @@ use Register::*;
 
 impl From<Byte> for Register {
     fn from(value: Byte) -> Self {
-        match value {
+        match 0b0000_1111 & value {
             0b0000 => Al,
             0b0001 => Ax,
             0b0010 => Cl,
