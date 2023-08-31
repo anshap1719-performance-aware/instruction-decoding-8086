@@ -109,16 +109,18 @@ impl Display for MovInstruction {
         f.write_str(", ")?;
 
         if self.variant == MovInstructionTypes::ImmediateToRegisterOrMemory {
-            if let MovTarget::Immediate(value) = self.source {
-                match value {
-                    ImmediateValue::SignedByte(value) => {
-                        f.write_str("byte ");
-                    }
-                    ImmediateValue::SignedWord(value) => {
-                        f.write_str("word ");
+            if let MovTarget::Memory(_) = self.destination {
+                if let MovTarget::Immediate(value) = self.source {
+                    match value {
+                        ImmediateValue::SignedByte(value) => {
+                            f.write_str("byte ");
+                        }
+                        ImmediateValue::SignedWord(value) => {
+                            f.write_str("word ");
+                        }
                     }
                 }
-            };
+            }
         }
 
         self.source.fmt(f)?;
