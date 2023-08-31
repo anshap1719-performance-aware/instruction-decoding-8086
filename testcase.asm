@@ -35,19 +35,21 @@ mov dh, al
 ; 8-bit immediate-to-register
 mov cx, 12
 mov cx, -12
+mov cl, 12
 
 ; 16-bit immediate-to-register
 mov dx, 3948
 mov dx, -3948
 
-;; Signed displacements
-;mov ax, [bx + di - 37]
-;mov [si - 300], cx
-;mov dx, [bx - 32]
-;
-;; Explicit sizes
-;mov [bp + di], byte 7
-;mov [di + 901], word 347
+; Signed displacements
+mov ax, [bx + di - 37]
+mov [si - 300], cx
+mov dx, [bx - 32]
+
+; Explicit sizes
+mov [bp + di], byte 7
+mov [bp + di], word 7
+mov [di + 901], word 347
 
 ; Direct address
 mov bp, [5]
@@ -56,7 +58,9 @@ mov bx, [3458]
 ; Memory-to-accumulator test
 mov ax, [2555]
 mov ax, [16]
+mov al, [0]
 
 ; Accumulator-to-memory test
 mov [2554], ax
 mov [15], ax
+mov [0], al

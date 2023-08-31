@@ -1,3 +1,4 @@
+use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
 use crate::*;
@@ -5,38 +6,18 @@ use byteorder::LittleEndian;
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone)]
-pub enum InstructionMode {
-    Register = 0b11,
-    Memory = 0b00,
-    MemoryPlusByte = 0b01,
-    MemoryPlusWord = 0b10,
-}
-
-impl From<Byte> for InstructionMode {
-    fn from(value: Byte) -> Self {
-        match value {
-            value if bit_match!(value, (1, 1, _, _, _, _, _, _)) => Self::Register,
-            value if bit_match!(value, (0, 0, _, _, _, _, _, _)) => Self::Memory,
-            value if bit_match!(value, (0, 1, _, _, _, _, _, _)) => Self::MemoryPlusByte,
-            value if bit_match!(value, (1, 0, _, _, _, _, _, _)) => Self::MemoryPlusWord,
-            _ => panic!("Unable to decode move mode"),
-        }
-    }
-}
-
-#[derive(Copy, Clone)]
 pub enum EffectiveAddress {
     Register(Register),
     RegisterSum(Register, Register),
-    RegisterPlusByte(Register, Byte),
-    RegisterPlusWord(Register, Word),
-    RegisterSumPlusByte(Register, Register, Byte),
-    RegisterSumPlusWord(Register, Register, Word),
+    RegisterPlusByte(Register, SignedByte),
+    RegisterPlusWord(Register, SignedWord),
+    RegisterSumPlusByte(Register, Register, SignedByte),
+    RegisterSumPlusWord(Register, Register, SignedWord),
     DirectAddress(Word),
 }
 
-impl From<(&mut BufReader<File>, InstructionMode, Byte)> for EffectiveAddress {
-    fn from((reader, mode, mem_byte): (&mut BufReader<File>, InstructionMode, Byte)) -> Self {
+impl EffectiveAddress {
+    pub fn read(reader: &mut BufReader<File>, mode: InstructionMode, mem_byte: Byte) -> Self {
         use register::Register::*;
         use EffectiveAddress::*;
 
@@ -57,7 +38,7 @@ impl From<(&mut BufReader<File>, InstructionMode, Byte)> for EffectiveAddress {
                 _ => panic!("Unable to compute effective address"),
             },
             InstructionMode::MemoryPlusByte => {
-                let displacement = reader.read_u8().unwrap();
+                let displacement = reader.read_i8().unwrap();
 
                 match mem_byte {
                     0b000 => RegisterSumPlusByte(Bx, Si, displacement),
@@ -72,7 +53,7 @@ impl From<(&mut BufReader<File>, InstructionMode, Byte)> for EffectiveAddress {
                 }
             }
             InstructionMode::MemoryPlusWord => {
-                let displacement = reader.read_u16::<LittleEndian>().unwrap();
+                let displacement = reader.read_i16::<LittleEndian>().unwrap();
 
                 match mem_byte {
                     0b000 => RegisterSumPlusWord(Bx, Si, displacement),
@@ -101,16 +82,26 @@ impl Display for EffectiveAddress {
                 f.write_fmt(format_args!("[{register1} + {register2}]"))
             }
             EffectiveAddress::RegisterPlusByte(register, byte) => {
-                f.write_fmt(format_args!("[{register} + {byte}]"))
+                let sign = if byte.is_negative() { "-" } else { "+" };
+                f.write_fmt(format_args!("[{register} {sign} {}]", byte.abs()))
             }
             EffectiveAddress::RegisterPlusWord(register, word) => {
-                f.write_fmt(format_args!("[{register} + {word}]"))
+                let sign = if word.is_negative() { "-" } else { "+" };
+                f.write_fmt(format_args!("[{register} {sign} {}]", word.abs()))
             }
             EffectiveAddress::RegisterSumPlusByte(register1, register2, byte) => {
-                f.write_fmt(format_args!("[{register1} + {register2} + {byte}]"))
+                let sign = if byte.is_negative() { "-" } else { "+" };
+                f.write_fmt(format_args!(
+                    "[{register1} + {register2} {sign} {}]",
+                    byte.abs()
+                ))
             }
             EffectiveAddress::RegisterSumPlusWord(register1, register2, word) => {
-                f.write_fmt(format_args!("[{register1} + {register2} + {word}]"))
+                let sign = if word.is_negative() { "-" } else { "+" };
+                f.write_fmt(format_args!(
+                    "[{register1} + {register2} {sign} {}]",
+                    word.abs()
+                ))
             }
             EffectiveAddress::DirectAddress(word) => f.write_fmt(format_args!("[{word}]")),
         }

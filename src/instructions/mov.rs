@@ -1,9 +1,10 @@
-use crate::memory::{EffectiveAddress, InstructionMode};
+use crate::memory::EffectiveAddress;
+use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
 use crate::*;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::fmt::{Debug, Display, Formatter, Pointer, Write};
+use std::fmt::{Display, Formatter, Write};
 use std::io::BufReader;
 
 #[derive(Copy, Clone)]
@@ -34,15 +35,15 @@ impl From<Byte> for MovInstructionTypes {
 
 #[derive(Copy, Clone)]
 enum ImmediateValue {
-    Byte(u8),
-    Word(u16),
+    SignedByte(i8),
+    SignedWord(i16),
 }
 
 impl Display for ImmediateValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImmediateValue::Byte(value) => Display::fmt(value, f),
-            ImmediateValue::Word(value) => Display::fmt(value, f),
+            ImmediateValue::SignedByte(value) => Display::fmt(value, f),
+            ImmediateValue::SignedWord(value) => Display::fmt(value, f),
         }
     }
 }
@@ -50,6 +51,7 @@ impl Display for ImmediateValue {
 #[derive(Copy, Clone)]
 enum MovTarget {
     Accumulator,
+    AccumulatorWide,
     Register(Register),
     Memory(EffectiveAddress),
     Immediate(ImmediateValue),
@@ -58,7 +60,8 @@ enum MovTarget {
 impl Display for MovTarget {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MovTarget::Accumulator => f.write_str("ax"),
+            MovTarget::Accumulator => f.write_str("al"),
+            MovTarget::AccumulatorWide => f.write_str("ax"),
             MovTarget::Register(register) => register.fmt(f),
             MovTarget::Memory(memory) => memory.fmt(f),
             MovTarget::Immediate(immediate) => immediate.fmt(f),
@@ -66,16 +69,14 @@ impl Display for MovTarget {
     }
 }
 
-impl From<(&mut BufReader<File>, InstructionMode, Byte, Wide)> for MovTarget {
-    fn from(
-        (reader, mode, target_specifier_byte, is_wide): (
-            &mut BufReader<File>,
-            InstructionMode,
-            Byte,
-            Wide,
-        ),
+impl MovTarget {
+    fn read(
+        reader: &mut BufReader<File>,
+        mode: InstructionMode,
+        target_specifier_byte: Byte,
+        is_wide: Wide,
     ) -> Self {
-        let mut mem_bytes = 0b00_000_111 & target_specifier_byte;
+        let mem_bytes = 0b00_000_111 & target_specifier_byte;
 
         if let InstructionMode::Register = mode {
             let mut mem_bytes = mem_bytes << 1;
@@ -86,7 +87,7 @@ impl From<(&mut BufReader<File>, InstructionMode, Byte, Wide)> for MovTarget {
 
             MovTarget::Register(Register::from(mem_bytes))
         } else {
-            MovTarget::Memory(EffectiveAddress::from((reader, mode, mem_bytes)))
+            MovTarget::Memory(EffectiveAddress::read(reader, mode, mem_bytes))
         }
     }
 }
@@ -112,8 +113,8 @@ impl Display for MovInstruction {
     }
 }
 
-impl From<(&mut BufReader<File>, Byte)> for MovInstruction {
-    fn from((reader, instruction_byte): (&mut BufReader<File>, Byte)) -> Self {
+impl MovInstruction {
+    pub fn read(reader: &mut BufReader<File>, instruction_byte: Byte) -> Self {
         use MovInstructionTypes::*;
 
         let variant = MovInstructionTypes::from(instruction_byte);
@@ -136,8 +137,7 @@ impl From<(&mut BufReader<File>, Byte)> for MovInstruction {
                 let register_byte = register_byte;
 
                 let register = MovTarget::Register(Register::from(register_byte));
-                let register_or_memory =
-                    MovTarget::from((reader, mode, target_specifiers, is_wide));
+                let register_or_memory = MovTarget::read(reader, mode, target_specifiers, is_wide);
 
                 MovInstruction {
                     variant,
@@ -165,9 +165,9 @@ impl From<(&mut BufReader<File>, Byte)> for MovInstruction {
                 }
 
                 let data = if is_wide {
-                    ImmediateValue::Word(reader.read_u16::<LittleEndian>().unwrap())
+                    ImmediateValue::SignedWord(reader.read_i16::<LittleEndian>().unwrap())
                 } else {
-                    ImmediateValue::Byte(reader.read_u8().unwrap())
+                    ImmediateValue::SignedByte(reader.read_i8().unwrap())
                 };
 
                 MovInstruction {
@@ -189,7 +189,11 @@ impl From<(&mut BufReader<File>, Byte)> for MovInstruction {
                     is_wide,
                     mode: None,
                     source: MovTarget::Memory(EffectiveAddress::DirectAddress(memory_location)),
-                    destination: MovTarget::Accumulator,
+                    destination: if is_wide {
+                        MovTarget::AccumulatorWide
+                    } else {
+                        MovTarget::Accumulator
+                    },
                 }
             }
             AccumulatorToMemory => {
@@ -201,13 +205,39 @@ impl From<(&mut BufReader<File>, Byte)> for MovInstruction {
                     is_destination: None,
                     is_wide,
                     mode: None,
-                    source: MovTarget::Accumulator,
+                    source: if is_wide {
+                        MovTarget::AccumulatorWide
+                    } else {
+                        MovTarget::Accumulator
+                    },
                     destination: MovTarget::Memory(EffectiveAddress::DirectAddress(
                         memory_location,
                     )),
                 }
             }
-            ImmediateToRegisterOrMemory => panic!("Not yet supported"),
+            ImmediateToRegisterOrMemory => {
+                let is_wide = bit_match!(instruction_byte, (_, _, _, _, _, _, _, 1));
+
+                let target_specifiers = reader.read_u8().expect("Failed to read instruction type");
+                let mode = InstructionMode::from(target_specifiers);
+
+                let register_or_memory = MovTarget::read(reader, mode, target_specifiers, is_wide);
+
+                let data = if is_wide {
+                    ImmediateValue::SignedWord(reader.read_i16::<LittleEndian>().unwrap())
+                } else {
+                    ImmediateValue::SignedByte(reader.read_i8().unwrap())
+                };
+
+                MovInstruction {
+                    variant,
+                    is_destination: None,
+                    is_wide,
+                    mode: Some(mode),
+                    source: MovTarget::Immediate(data),
+                    destination: register_or_memory,
+                }
+            }
         }
     }
 }

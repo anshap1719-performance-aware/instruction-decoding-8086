@@ -6,22 +6,21 @@
 #![deny(clippy::pedantic)]
 #![deny(clippy::cargo)]
 #![allow(deprecated)]
+#![allow(unused)]
+#![allow(clippy::too_many_lines)]
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::unused_async)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::enum_glob_use)]
-#![allow(clippy::doc_markdown)]
-#![deny(clippy::too_many_lines)]
-#![allow(clippy::multiple_crate_versions)]
 #![allow(clippy::cargo_common_metadata)]
 
 pub mod helpers;
 mod instructions;
 mod memory;
+mod mode;
 pub mod prelude;
 mod register;
 
-use crate::instructions::Instructions;
+use crate::instructions::decode::Instructions;
 use byteorder::ReadBytesExt;
 pub use prelude::*;
 use std::env::args;
@@ -39,7 +38,7 @@ fn main() {
                 break;
             };
 
-        let instruction = Instructions::from((&mut reader, instruction_byte));
+        let instruction = Instructions::read(&mut reader, instruction_byte);
 
         println!("{instruction}");
     }
