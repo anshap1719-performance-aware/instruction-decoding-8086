@@ -7,7 +7,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::fmt::{Display, Formatter, Write};
 use std::io::BufReader;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 enum MovInstructionTypes {
     RegisterOrMemoryToOrFromRegister,
     ImmediateToRegisterOrMemory,
@@ -106,7 +106,21 @@ impl Display for MovInstruction {
         f.write_str("mov ")?;
 
         self.destination.fmt(f)?;
-        f.write_char(',')?;
+        f.write_str(", ")?;
+
+        if self.variant == MovInstructionTypes::ImmediateToRegisterOrMemory {
+            if let MovTarget::Immediate(value) = self.source {
+                match value {
+                    ImmediateValue::SignedByte(value) => {
+                        f.write_str("byte ");
+                    }
+                    ImmediateValue::SignedWord(value) => {
+                        f.write_str("word ");
+                    }
+                }
+            };
+        }
+
         self.source.fmt(f)?;
 
         Ok(())

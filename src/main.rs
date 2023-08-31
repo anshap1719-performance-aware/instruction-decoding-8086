@@ -33,6 +33,8 @@ fn main() {
     let input = File::open(args[1].clone()).expect("Failed to open file");
     let mut reader = BufReader::new(input);
 
+    let mut output = String::from("bits 16\n\n");
+
     loop {
         let Ok(instruction_byte) = reader.read_u8() else {
                 break;
@@ -40,6 +42,8 @@ fn main() {
 
         let instruction = Instructions::read(&mut reader, instruction_byte);
 
-        println!("{instruction}");
+        output += &format!("{instruction}\n");
     }
+
+    println!("{output}");
 }
