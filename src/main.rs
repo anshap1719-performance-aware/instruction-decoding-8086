@@ -37,8 +37,8 @@ fn main() {
 
     loop {
         let Ok(instruction_byte) = reader.read_u8() else {
-                break;
-            };
+            break;
+        };
 
         let instruction = Instructions::read(&mut reader, instruction_byte);
 
