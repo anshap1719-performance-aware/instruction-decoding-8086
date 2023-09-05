@@ -1,3 +1,4 @@
+use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::memory::EffectiveAddress;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
@@ -33,72 +34,13 @@ impl From<Byte> for MovInstructionTypes {
     }
 }
 
-#[derive(Copy, Clone)]
-enum ImmediateValue {
-    SignedByte(i8),
-    SignedWord(i16),
-}
-
-impl Display for ImmediateValue {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ImmediateValue::SignedByte(value) => Display::fmt(value, f),
-            ImmediateValue::SignedWord(value) => Display::fmt(value, f),
-        }
-    }
-}
-
-#[derive(Copy, Clone)]
-enum MovTarget {
-    Accumulator,
-    AccumulatorWide,
-    Register(Register),
-    Memory(EffectiveAddress),
-    Immediate(ImmediateValue),
-}
-
-impl Display for MovTarget {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MovTarget::Accumulator => f.write_str("al"),
-            MovTarget::AccumulatorWide => f.write_str("ax"),
-            MovTarget::Register(register) => register.fmt(f),
-            MovTarget::Memory(memory) => memory.fmt(f),
-            MovTarget::Immediate(immediate) => immediate.fmt(f),
-        }
-    }
-}
-
-impl MovTarget {
-    fn read(
-        reader: &mut BufReader<File>,
-        mode: InstructionMode,
-        target_specifier_byte: Byte,
-        is_wide: Wide,
-    ) -> Self {
-        let mem_bytes = 0b00_000_111 & target_specifier_byte;
-
-        if let InstructionMode::Register = mode {
-            let mut mem_bytes = mem_bytes << 1;
-
-            if is_wide {
-                mem_bytes += 1;
-            }
-
-            MovTarget::Register(Register::from(mem_bytes))
-        } else {
-            MovTarget::Memory(EffectiveAddress::read(reader, mode, mem_bytes))
-        }
-    }
-}
-
 pub struct MovInstruction {
     variant: MovInstructionTypes,
     is_destination: Option<DestinationFirst>,
     is_wide: Wide,
     mode: Option<InstructionMode>,
-    source: MovTarget,
-    destination: MovTarget,
+    source: Operand,
+    destination: Operand,
 }
 
 impl Display for MovInstruction {
@@ -109,8 +51,8 @@ impl Display for MovInstruction {
         f.write_str(", ")?;
 
         if self.variant == MovInstructionTypes::ImmediateToRegisterOrMemory {
-            if let MovTarget::Memory(_) = self.destination {
-                if let MovTarget::Immediate(value) = self.source {
+            if let Operand::Memory(_) = self.destination {
+                if let Operand::Immediate(value) = self.source {
                     match value {
                         ImmediateValue::SignedByte(value) => {
                             f.write_str("byte ");
@@ -152,8 +94,8 @@ impl MovInstruction {
 
                 let register_byte = register_byte;
 
-                let register = MovTarget::Register(Register::from(register_byte));
-                let register_or_memory = MovTarget::read(reader, mode, target_specifiers, is_wide);
+                let register = Operand::Register(Register::from(register_byte));
+                let register_or_memory = Operand::read(reader, mode, target_specifiers, is_wide);
 
                 MovInstruction {
                     variant,
@@ -191,8 +133,8 @@ impl MovInstruction {
                     is_destination: None,
                     is_wide,
                     mode: None,
-                    source: MovTarget::Immediate(data),
-                    destination: MovTarget::Register(Register::from(register_byte)),
+                    source: Operand::Immediate(data),
+                    destination: Operand::Register(Register::from(register_byte)),
                 }
             }
             MemoryToAccumulator => {
@@ -204,11 +146,11 @@ impl MovInstruction {
                     is_destination: None,
                     is_wide,
                     mode: None,
-                    source: MovTarget::Memory(EffectiveAddress::DirectAddress(memory_location)),
+                    source: Operand::Memory(EffectiveAddress::DirectAddress(memory_location)),
                     destination: if is_wide {
-                        MovTarget::AccumulatorWide
+                        Operand::AccumulatorWide
                     } else {
-                        MovTarget::Accumulator
+                        Operand::Accumulator
                     },
                 }
             }
@@ -222,13 +164,11 @@ impl MovInstruction {
                     is_wide,
                     mode: None,
                     source: if is_wide {
-                        MovTarget::AccumulatorWide
+                        Operand::AccumulatorWide
                     } else {
-                        MovTarget::Accumulator
+                        Operand::Accumulator
                     },
-                    destination: MovTarget::Memory(EffectiveAddress::DirectAddress(
-                        memory_location,
-                    )),
+                    destination: Operand::Memory(EffectiveAddress::DirectAddress(memory_location)),
                 }
             }
             ImmediateToRegisterOrMemory => {
@@ -237,7 +177,7 @@ impl MovInstruction {
                 let target_specifiers = reader.read_u8().expect("Failed to read instruction type");
                 let mode = InstructionMode::from(target_specifiers);
 
-                let register_or_memory = MovTarget::read(reader, mode, target_specifiers, is_wide);
+                let register_or_memory = Operand::read(reader, mode, target_specifiers, is_wide);
 
                 let data = if is_wide {
                     ImmediateValue::SignedWord(reader.read_i16::<LittleEndian>().unwrap())
@@ -250,7 +190,7 @@ impl MovInstruction {
                     is_destination: None,
                     is_wide,
                     mode: Some(mode),
-                    source: MovTarget::Immediate(data),
+                    source: Operand::Immediate(data),
                     destination: register_or_memory,
                 }
             }
