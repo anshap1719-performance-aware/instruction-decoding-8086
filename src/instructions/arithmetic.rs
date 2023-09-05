@@ -127,6 +127,8 @@ where
 
                 let data = if !is_signed && is_wide {
                     ImmediateValue::SignedWord(reader.read_i16::<LittleEndian>().unwrap())
+                } else if is_wide {
+                    ImmediateValue::SignedWord(i16::from(reader.read_i8().unwrap()))
                 } else {
                     ImmediateValue::SignedByte(reader.read_i8().unwrap())
                 };

@@ -54,10 +54,10 @@ impl Display for MovInstruction {
             if let Operand::Memory(_) = self.destination {
                 if let Operand::Immediate(value) = self.source {
                     match value {
-                        ImmediateValue::SignedByte(value) => {
+                        ImmediateValue::SignedByte(_) => {
                             f.write_str("byte ");
                         }
-                        ImmediateValue::SignedWord(value) => {
+                        ImmediateValue::SignedWord(_) => {
                             f.write_str("word ");
                         }
                     }

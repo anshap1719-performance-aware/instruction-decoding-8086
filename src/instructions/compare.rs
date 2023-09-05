@@ -23,15 +23,16 @@ impl Display for CompareInstruction {
         f.write_str("cmp ")?;
 
         if self.variant == ArithmeticInstructionTypes::ImmediateToRegisterOrMemory {
-            if let Operand::Memory(address) = self.destination {
-                if let EffectiveAddress::RegisterPlusByte(_, _)
-                | EffectiveAddress::RegisterSumPlusByte(_, _, _) = address
-                {
-                    f.write_str("byte ");
-                } else if let EffectiveAddress::RegisterPlusWord(_, _)
-                | EffectiveAddress::RegisterSumPlusWord(_, _, _) = address
-                {
-                    f.write_str("word ");
+            if let Operand::Memory(_) = self.destination {
+                if let Operand::Immediate(value) = self.source {
+                    match value {
+                        ImmediateValue::SignedByte(_) => {
+                            f.write_str("byte ");
+                        }
+                        ImmediateValue::SignedWord(_) => {
+                            f.write_str("word ");
+                        }
+                    }
                 }
             }
         }

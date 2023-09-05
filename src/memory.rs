@@ -77,7 +77,7 @@ impl EffectiveAddress {
 impl Display for EffectiveAddress {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            EffectiveAddress::Register(register) => register.fmt(f),
+            EffectiveAddress::Register(register) => f.write_fmt(format_args!("[{register}]")),
             EffectiveAddress::RegisterSum(register1, register2) => {
                 f.write_fmt(format_args!("[{register1} + {register2}]"))
             }
