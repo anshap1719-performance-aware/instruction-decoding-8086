@@ -2,10 +2,13 @@ use super::mov::*;
 use crate::instructions::add::AddInstruction;
 use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::compare::CompareInstruction;
+use crate::instructions::jump::{
+    JumpInstruction, JumpInstructionTypes, OptionalJumpInstructionTypes,
+};
 use crate::instructions::subtract::SubtractInstruction;
 use crate::prelude::*;
 use byteorder::ReadBytesExt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Pointer};
 use std::fs::File;
 use std::io::BufReader;
 
@@ -14,6 +17,7 @@ pub enum Instructions {
     Add(AddInstruction),
     Sub(SubtractInstruction),
     Cmp(CompareInstruction),
+    Jump(JumpInstruction),
 }
 
 impl Display for Instructions {
@@ -23,6 +27,7 @@ impl Display for Instructions {
             Instructions::Add(instruction) => instruction.fmt(f),
             Instructions::Sub(instruction) => instruction.fmt(f),
             Instructions::Cmp(instruction) => instruction.fmt(f),
+            Instructions::Jump(instruction) => instruction.fmt(f),
         }
     }
 }
@@ -74,6 +79,12 @@ impl Instructions {
                     }
                     _ => panic!("Invalid instruction found"),
                 }
+            }
+            value if OptionalJumpInstructionTypes::from(value).0.is_some() => {
+                Instructions::Jump(JumpInstruction {
+                    variant: OptionalJumpInstructionTypes::from(value).0.unwrap(),
+                    displacement: reader.read_i8().unwrap(),
+                })
             }
             _ => panic!("Unsupported instruction"),
         }
