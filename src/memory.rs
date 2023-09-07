@@ -5,7 +5,7 @@ use crate::*;
 use byteorder::LittleEndian;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum EffectiveAddress {
     Register(Register),
     RegisterSum(Register, Register),

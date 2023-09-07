@@ -44,8 +44,6 @@ where
     Self: Sized,
 {
     fn new(
-        variant: ArithmeticInstructionTypes,
-        is_destination: Option<DestinationFirst>,
         is_wide: Wide,
         mode: Option<InstructionMode>,
         source: Operand,
@@ -78,8 +76,6 @@ where
                 let register_or_memory = Operand::read(reader, mode, target_specifiers, is_wide);
 
                 Self::new(
-                    variant,
-                    Some(is_destination),
                     is_wide,
                     Some(mode),
                     if is_destination {
@@ -104,8 +100,6 @@ where
                 };
 
                 Self::new(
-                    variant,
-                    None,
                     is_wide,
                     None,
                     Operand::Immediate(data),
@@ -134,8 +128,6 @@ where
                 };
 
                 Self::new(
-                    variant,
-                    None,
                     is_wide,
                     Some(mode),
                     Operand::Immediate(data),

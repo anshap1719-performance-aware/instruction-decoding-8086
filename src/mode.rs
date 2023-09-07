@@ -1,6 +1,6 @@
 use crate::{bit_match, compute_mask, compute_val, Byte};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum InstructionMode {
     Register = 0b11,
     Memory = 0b00,

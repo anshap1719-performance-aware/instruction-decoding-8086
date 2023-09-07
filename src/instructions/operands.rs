@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufReader;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum ImmediateValue {
     SignedByte(i8),
     SignedWord(i16),
@@ -21,7 +21,7 @@ impl Display for ImmediateValue {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Operand {
     Accumulator,
     AccumulatorWide,

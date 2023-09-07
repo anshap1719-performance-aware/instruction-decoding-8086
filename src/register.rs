@@ -24,7 +24,7 @@ impl Display for RegisterManager {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Register {
     Al,
     Ax,

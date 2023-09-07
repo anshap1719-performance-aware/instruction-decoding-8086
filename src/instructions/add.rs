@@ -1,5 +1,6 @@
 use crate::instructions::arithmetic::{ArithmeticInstruction, ArithmeticInstructionTypes};
 use crate::instructions::operands::{ImmediateValue, Operand};
+use crate::instructions::AnyInstruction;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
@@ -8,38 +9,31 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufReader;
 
-pub struct AddInstruction {
-    variant: ArithmeticInstructionTypes,
-    is_destination: Option<DestinationFirst>,
-    is_wide: Wide,
-    mode: Option<InstructionMode>,
-    source: Operand,
-    destination: Operand,
-}
+pub struct AddInstruction(pub AnyInstruction);
 
 impl Display for AddInstruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("add ")?;
 
-        if self.variant == ArithmeticInstructionTypes::ImmediateToRegisterOrMemory {
-            if let Operand::Memory(_) = self.destination {
-                if let Operand::Immediate(value) = self.source {
-                    match value {
-                        ImmediateValue::SignedByte(_) => {
-                            f.write_str("byte ");
-                        }
-                        ImmediateValue::SignedWord(_) => {
-                            f.write_str("word ");
-                        }
+        if let Operand::Memory(_) = self.0.destination {
+            if let Some(Operand::Immediate(value)) = self.0.source {
+                match value {
+                    ImmediateValue::SignedByte(_) => {
+                        f.write_str("byte ");
+                    }
+                    ImmediateValue::SignedWord(_) => {
+                        f.write_str("word ");
                     }
                 }
             }
         }
 
-        self.destination.fmt(f)?;
-        f.write_str(", ")?;
+        self.0.destination.fmt(f)?;
 
-        self.source.fmt(f)?;
+        if let Some(source) = self.0.source {
+            f.write_str(", ")?;
+            source.fmt(f)?;
+        }
 
         Ok(())
     }
@@ -47,20 +41,16 @@ impl Display for AddInstruction {
 
 impl ArithmeticInstruction for AddInstruction {
     fn new(
-        variant: ArithmeticInstructionTypes,
-        is_destination: Option<DestinationFirst>,
         is_wide: Wide,
         mode: Option<InstructionMode>,
         source: Operand,
         destination: Operand,
     ) -> Self {
-        AddInstruction {
-            variant,
-            is_destination,
+        AddInstruction(AnyInstruction {
             is_wide,
             mode,
-            source,
+            source: Some(source),
             destination,
-        }
+        })
     }
 }

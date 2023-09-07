@@ -2,9 +2,7 @@ use super::mov::*;
 use crate::instructions::add::AddInstruction;
 use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::compare::CompareInstruction;
-use crate::instructions::jump::{
-    JumpInstruction, JumpInstructionTypes, OptionalJumpInstructionTypes,
-};
+use crate::instructions::jump::JumpInstructions;
 use crate::instructions::subtract::SubtractInstruction;
 use crate::prelude::*;
 use byteorder::ReadBytesExt;
@@ -17,7 +15,7 @@ pub enum Instructions {
     Add(AddInstruction),
     Sub(SubtractInstruction),
     Cmp(CompareInstruction),
-    Jump(JumpInstruction),
+    Jump(JumpInstructions),
 }
 
 impl Display for Instructions {
@@ -80,13 +78,10 @@ impl Instructions {
                     _ => panic!("Invalid instruction found"),
                 }
             }
-            value if OptionalJumpInstructionTypes::from(value).0.is_some() => {
-                Instructions::Jump(JumpInstruction {
-                    variant: OptionalJumpInstructionTypes::from(value).0.unwrap(),
-                    displacement: reader.read_i8().unwrap(),
-                })
+            value if JumpInstructions::is_jump_instruction(value) => {
+                Instructions::Jump(JumpInstructions::try_from((value, reader)).unwrap())
             }
-            _ => panic!("Unsupported instruction"),
+            value => panic!("Unsupported instruction: {value}"),
         }
     }
 }
