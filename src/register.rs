@@ -1,5 +1,28 @@
 use crate::prelude::*;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
+
+const REGISTERS_MEMORY_SIZE: u16 = 16;
+
+#[derive(Debug)]
+pub struct RegisterManager {
+    memory: [u8; REGISTERS_MEMORY_SIZE as usize],
+}
+
+impl RegisterManager {
+    pub fn new() -> Self {
+        Self {
+            memory: [
+                0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
+            ],
+        }
+    }
+}
+
+impl Display for RegisterManager {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.memory.fmt(f)
+    }
+}
 
 #[derive(Copy, Clone)]
 pub enum Register {
@@ -21,6 +44,7 @@ pub enum Register {
     Di,
 }
 
+use crate::memory::Memory;
 use Register::*;
 
 impl From<Byte> for Register {
@@ -67,5 +91,82 @@ impl Display for Register {
             Bh => f.write_str("bh"),
             Di => f.write_str("di"),
         }
+    }
+}
+
+impl Register {
+    pub fn to_memory_address(self) -> u16 {
+        match self {
+            Ax | Ah => 0,
+            Al => 1,
+            Bx | Bh => 2,
+            Bl => 3,
+            Cx | Ch => 4,
+            Cl => 5,
+            Dx | Dh => 6,
+            Dl => 7,
+            Sp => 8,
+            Bp => 10,
+            Si => 12,
+            Di => 14,
+        }
+    }
+}
+
+impl Memory<REGISTERS_MEMORY_SIZE> for RegisterManager {
+    fn read_byte(&self, address: u16) -> u8 {
+        self.verify_address(address);
+
+        self.memory[address as usize]
+    }
+
+    fn read_word(&self, address: u16) -> u16 {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let high = self.memory[address as usize];
+        let low = self.memory[low_byte_address as usize];
+
+        (u16::from(high) << 8) + u16::from(low)
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        self.verify_address(address);
+
+        self.memory[address as usize] = value;
+    }
+
+    fn write_word(&mut self, address: u16, value: u16) {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let [high, low] = value.to_be_bytes();
+
+        self.memory[address as usize] = high;
+        self.memory[low_byte_address as usize] = low;
+    }
+}
+
+impl RegisterManager {
+    fn read_byte_from_register(&self, register: Register) -> u8 {
+        self.read_byte(register.to_memory_address())
+    }
+
+    fn read_word_from_register(&self, register: Register) -> u16 {
+        self.read_word(register.to_memory_address())
+    }
+
+    fn write_byte_to_register(&mut self, register: Register, value: u8) {
+        self.write_byte(register.to_memory_address(), value);
+    }
+
+    fn write_word_to_register(&mut self, register: Register, value: u16) {
+        self.write_word(register.to_memory_address(), value);
     }
 }
