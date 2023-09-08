@@ -1,4 +1,3 @@
-use crate::instructions::add::AddInstruction;
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::mode::InstructionMode;
 use crate::prelude::*;

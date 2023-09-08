@@ -1,8 +1,10 @@
 use crate::instructions::operands::{ImmediateValue, Operand};
-use crate::instructions::AnyInstruction;
+use crate::instructions::{AnyInstruction, Instruction};
+use crate::memory::MemoryManager;
 use crate::prelude::*;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::fmt::{Display, Formatter, Write};
+use crate::register::RegisterManager;
+use byteorder::ReadBytesExt;
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufReader;
 
@@ -349,5 +351,11 @@ impl TryFrom<(Byte, &mut BufReader<File>)> for JumpInstructions {
             }
             _ => Err("Not a jump instruction".into()),
         }
+    }
+}
+
+impl Instruction for JumpInstructions {
+    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+        todo!()
     }
 }

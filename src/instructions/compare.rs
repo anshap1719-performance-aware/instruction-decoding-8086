@@ -1,14 +1,11 @@
-use crate::instructions::arithmetic::{ArithmeticInstruction, ArithmeticInstructionTypes};
+use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::operands::{ImmediateValue, Operand};
-use crate::instructions::AnyInstruction;
-use crate::memory::EffectiveAddress;
+use crate::instructions::{AnyInstruction, Instruction};
+use crate::memory::MemoryManager;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
-use crate::register::Register;
-use byteorder::{LittleEndian, ReadBytesExt};
+use crate::register::RegisterManager;
 use std::fmt::{Display, Formatter};
-use std::fs::File;
-use std::io::BufReader;
 
 pub struct CompareInstruction(pub AnyInstruction);
 
@@ -20,10 +17,10 @@ impl Display for CompareInstruction {
             if let Some(Operand::Immediate(value)) = self.0.source {
                 match value {
                     ImmediateValue::SignedByte(_) => {
-                        f.write_str("byte ");
+                        f.write_str("byte ")?;
                     }
                     ImmediateValue::SignedWord(_) => {
-                        f.write_str("word ");
+                        f.write_str("word ")?;
                     }
                 }
             }
@@ -52,5 +49,11 @@ impl ArithmeticInstruction for CompareInstruction {
             source: Some(source),
             destination,
         })
+    }
+}
+
+impl Instruction for CompareInstruction {
+    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+        todo!()
     }
 }

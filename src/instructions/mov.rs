@@ -1,12 +1,12 @@
 use crate::instructions::operands::{ImmediateValue, Operand};
-use crate::instructions::AnyInstruction;
+use crate::instructions::{AnyInstruction, Instruction};
 use crate::memory::EffectiveAddress;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
 use crate::*;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 use std::io::BufReader;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -30,12 +30,102 @@ impl From<Byte> for MovInstructionTypes {
             value if bit_match!(value, (1, 0, 1, 1, _, _, _, _)) => Self::ImmediateToRegister,
             value if bit_match!(value, (1, 0, 1, 0, 0, 0, 0, _)) => Self::MemoryToAccumulator,
             value if bit_match!(value, (1, 0, 1, 0, 0, 0, 1, _)) => Self::AccumulatorToMemory,
-            _ => panic!("Unable to decode instruction type"),
+            value => panic!("Unable to decode instruction type: {value:b}"),
         }
     }
 }
 
 pub struct MovInstruction(pub AnyInstruction);
+
+impl Instruction for MovInstruction {
+    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+        let MovInstruction(AnyInstruction {
+            source,
+            destination,
+            ..
+        }) = self;
+
+        let source: Option<ImmediateValue> = match source {
+            None => None,
+            Some(source) => match source {
+                Operand::Accumulator => Some(ImmediateValue::SignedByte(i8::from_le_bytes([
+                    register_store.read_byte_from_register(Register::Al),
+                ]))),
+                Operand::AccumulatorWide => Some(ImmediateValue::SignedWord(i16::from_le_bytes(
+                    register_store
+                        .read_word_from_register(Register::Ax)
+                        .to_le_bytes(),
+                ))),
+                Operand::Register(register) => {
+                    if self.0.is_wide {
+                        Some(ImmediateValue::SignedWord(i16::from_le_bytes(
+                            register_store
+                                .read_word_from_register(*register)
+                                .to_le_bytes(),
+                        )))
+                    } else {
+                        Some(ImmediateValue::SignedByte(i8::from_le_bytes([
+                            register_store.read_byte_from_register(*register),
+                        ])))
+                    }
+                }
+                Operand::Memory(address) => Some(memory_store.read_memory_from_effective_address(
+                    *address,
+                    self.0.is_wide,
+                    register_store,
+                )),
+                Operand::Immediate(immediate_value) => Some(*immediate_value),
+            },
+        };
+
+        if let Some(source) = source {
+            match destination {
+                Operand::Accumulator => match source {
+                    ImmediateValue::SignedByte(value) => {
+                        register_store.write_byte_to_register(
+                            Register::Al,
+                            u8::from_le_bytes(value.to_le_bytes()),
+                        );
+                    }
+                    ImmediateValue::SignedWord(_) => {
+                        panic!("Cannot write word to Al")
+                    }
+                },
+                Operand::AccumulatorWide => match source {
+                    ImmediateValue::SignedByte(value) => {
+                        register_store.write_byte_to_register(
+                            Register::Al,
+                            u8::from_le_bytes(value.to_le_bytes()),
+                        );
+                    }
+                    ImmediateValue::SignedWord(value) => register_store.write_word_to_register(
+                        Register::Ax,
+                        u16::from_le_bytes(value.to_le_bytes()),
+                    ),
+                },
+                Operand::Register(register) => match source {
+                    ImmediateValue::SignedByte(value) => {
+                        register_store.write_byte_to_register(
+                            *register,
+                            u8::from_le_bytes(value.to_le_bytes()),
+                        );
+                    }
+                    ImmediateValue::SignedWord(value) => register_store
+                        .write_word_to_register(*register, u16::from_le_bytes(value.to_le_bytes())),
+                },
+                Operand::Memory(address) => memory_store.write_to_effective_memory_address(
+                    *address,
+                    self.0.is_wide,
+                    register_store,
+                    source,
+                ),
+                Operand::Immediate(_) => panic!("Cannot move a value to immediate"),
+            }
+        } else {
+            panic!("Mov instruction expects both a source and a destination");
+        }
+    }
+}
 
 impl Display for MovInstruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -49,10 +139,10 @@ impl Display for MovInstruction {
                 if let Some(Operand::Immediate(value)) = self.0.source {
                     match value {
                         ImmediateValue::SignedByte(_) => {
-                            f.write_str("byte ");
+                            f.write_str("byte ")?;
                         }
                         ImmediateValue::SignedWord(_) => {
-                            f.write_str("word ");
+                            f.write_str("word ")?;
                         }
                     }
                 }

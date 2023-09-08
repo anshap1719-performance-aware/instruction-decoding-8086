@@ -13,26 +13,29 @@
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::cargo_common_metadata)]
 
-pub mod helpers;
-mod instructions;
-mod memory;
-mod mode;
-pub mod prelude;
-mod register;
-
-use crate::instructions::decode::Instructions;
 use byteorder::ReadBytesExt;
-pub use prelude::*;
+use instruction_decoding_8086::*;
 use std::env::args;
 use std::fs::File;
 use std::io::BufReader;
 
 fn main() {
+    let register_store = &mut RegisterManager::new();
+    let memory_store = &mut MemoryManager::new();
+
     let args = args().collect::<Vec<_>>();
 
     let input = File::open(args[1].clone()).expect("Failed to open file");
     let mut reader = BufReader::new(input);
 
+    simulate(reader, register_store, memory_store);
+}
+
+fn decode() {
+    let args = args().collect::<Vec<_>>();
+
+    let input = File::open(args[1].clone()).expect("Failed to open file");
+    let mut reader = BufReader::new(input);
     let mut output = String::from("bits 16\n\n");
 
     loop {

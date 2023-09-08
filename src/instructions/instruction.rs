@@ -1,8 +1,9 @@
 use crate::instructions::operands::Operand;
-use crate::instructions::operands::Operand::{Accumulator, AccumulatorWide};
+use crate::instructions::operands::Operand::AccumulatorWide;
+use crate::memory::MemoryManager;
 use crate::mode::InstructionMode;
-use crate::{DestinationFirst, Wide};
-use std::fmt::Display;
+use crate::register::RegisterManager;
+use crate::Wide;
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct AnyInstruction {
@@ -24,7 +25,5 @@ impl Default for AnyInstruction {
 }
 
 pub trait Instruction {
-    const MEMORY_SIZE: u8;
-
-    fn execute(&self);
+    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager);
 }

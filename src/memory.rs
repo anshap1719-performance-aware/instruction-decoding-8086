@@ -1,3 +1,4 @@
+use crate::instructions::operands::ImmediateValue;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
@@ -108,13 +109,179 @@ impl Display for EffectiveAddress {
     }
 }
 
-pub trait Memory<const MEMORY_SIZE: u16> {
+pub trait Memory<const MEMORY_SIZE: usize> {
     fn verify_address(&self, address: u16) {
-        assert!(address <= MEMORY_SIZE);
+        assert!(address <= MEMORY_SIZE as u16);
     }
 
-    fn read_byte(&self, address: u16) -> u8;
-    fn read_word(&self, address: u16) -> u16;
-    fn write_byte(&mut self, address: u16, value: u8);
-    fn write_word(&mut self, address: u16, value: u16);
+    fn get_memory_mut(&mut self) -> &mut [u8; MEMORY_SIZE];
+
+    fn get_memory(&self) -> &[u8; MEMORY_SIZE];
+
+    fn read_byte(&self, address: u16) -> u8 {
+        self.verify_address(address);
+
+        self.get_memory()[address as usize]
+    }
+
+    fn read_signed_byte(&self, address: u16) -> i8 {
+        self.verify_address(address);
+
+        self.get_memory()[address as usize] as i8
+    }
+
+    fn read_word(&self, address: u16) -> u16 {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let memory = self.get_memory();
+
+        let high = memory[address as usize];
+        let low = memory[low_byte_address as usize];
+
+        (u16::from(high) << 8) + u16::from(low)
+    }
+
+    fn read_signed_word(&self, address: u16) -> i16 {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let memory = self.get_memory();
+
+        let high = memory[address as usize];
+        let low = memory[low_byte_address as usize];
+
+        (i16::from(high) << 8) + i16::from(low)
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        self.verify_address(address);
+
+        self.get_memory_mut()[address as usize] = value;
+    }
+
+    fn write_word(&mut self, address: u16, value: u16) {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let [high, low] = value.to_be_bytes();
+
+        let memory = self.get_memory_mut();
+
+        memory[address as usize] = high;
+        memory[low_byte_address as usize] = low;
+    }
+}
+
+const MAIN_MEMORY_SIZE: usize = u16::MAX as usize;
+
+#[derive(Debug)]
+pub struct MemoryManager {
+    memory: [u8; MAIN_MEMORY_SIZE],
+}
+
+impl MemoryManager {
+    pub fn new() -> Self {
+        Self {
+            memory: [0b0; MAIN_MEMORY_SIZE],
+        }
+    }
+
+    fn effective_address_to_address(
+        &self,
+        address: EffectiveAddress,
+        register_store: &RegisterManager,
+    ) -> u16 {
+        match address {
+            EffectiveAddress::Register(register) => {
+                let address: i16 = register_store.read_value(register).into();
+                address as u16
+            }
+            EffectiveAddress::RegisterSum(register1, register2) => {
+                let address: i16 = (register_store.read_value(register1)
+                    + register_store.read_value(register2))
+                .into();
+
+                address as u16
+            }
+            EffectiveAddress::RegisterPlusByte(register, value) => {
+                let address = register_store.read_value(register) + value;
+
+                address as u16
+            }
+            EffectiveAddress::RegisterPlusWord(register, value) => {
+                let address = register_store.read_value(register) + value;
+
+                address as u16
+            }
+            EffectiveAddress::RegisterSumPlusByte(register1, register2, value) => {
+                let address = register_store.read_value(register1)
+                    + register_store.read_value(register2)
+                    + (value as i16);
+
+                address as u16
+            }
+            EffectiveAddress::RegisterSumPlusWord(register1, register2, value) => {
+                let address = register_store.read_value(register1)
+                    + register_store.read_value(register2)
+                    + value;
+
+                address as u16
+            }
+            EffectiveAddress::DirectAddress(address) => address,
+        }
+    }
+
+    pub fn read_memory_from_effective_address(
+        &self,
+        address: EffectiveAddress,
+        is_wide: bool,
+        register_store: &mut RegisterManager,
+    ) -> ImmediateValue {
+        let address = self.effective_address_to_address(address, register_store);
+
+        if is_wide {
+            self.read_signed_word(address).into()
+        } else {
+            self.read_signed_byte(address).into()
+        }
+    }
+
+    pub fn write_to_effective_memory_address(
+        &mut self,
+        address: EffectiveAddress,
+        is_wide: bool,
+        register_store: &mut RegisterManager,
+        value: ImmediateValue,
+    ) {
+        let address = self.effective_address_to_address(address, register_store);
+
+        if is_wide {
+            self.write_word(address, value.into())
+        } else {
+            self.write_byte(
+                address,
+                value.try_into().expect("Not is wide but value is word"),
+            )
+        }
+    }
+}
+
+impl Memory<MAIN_MEMORY_SIZE> for MemoryManager {
+    fn get_memory_mut(&mut self) -> &mut [u8; MAIN_MEMORY_SIZE] {
+        &mut self.memory
+    }
+
+    fn get_memory(&self) -> &[u8; MAIN_MEMORY_SIZE] {
+        &self.memory
+    }
 }

@@ -4,9 +4,12 @@ use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::compare::CompareInstruction;
 use crate::instructions::jump::JumpInstructions;
 use crate::instructions::subtract::SubtractInstruction;
+use crate::instructions::Instruction;
+use crate::memory::MemoryManager;
 use crate::prelude::*;
+use crate::register::RegisterManager;
 use byteorder::ReadBytesExt;
-use std::fmt::{Display, Formatter, Pointer};
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufReader;
 
@@ -16,6 +19,18 @@ pub enum Instructions {
     Sub(SubtractInstruction),
     Cmp(CompareInstruction),
     Jump(JumpInstructions),
+}
+
+impl Instruction for Instructions {
+    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+        match self {
+            Instructions::Mov(instruction) => instruction.execute(register_store, memory_store),
+            Instructions::Add(instruction) => instruction.execute(register_store, memory_store),
+            Instructions::Sub(instruction) => instruction.execute(register_store, memory_store),
+            Instructions::Cmp(instruction) => instruction.execute(register_store, memory_store),
+            Instructions::Jump(instruction) => instruction.execute(register_store, memory_store),
+        }
+    }
 }
 
 impl Display for Instructions {
@@ -81,7 +96,7 @@ impl Instructions {
             value if JumpInstructions::is_jump_instruction(value) => {
                 Instructions::Jump(JumpInstructions::try_from((value, reader)).unwrap())
             }
-            value => panic!("Unsupported instruction: {value}"),
+            _ => panic!("Unsupported instruction: {value}"),
         }
     }
 }

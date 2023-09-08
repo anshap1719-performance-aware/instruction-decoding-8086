@@ -1,19 +1,17 @@
 use crate::prelude::*;
 use std::fmt::{Debug, Display, Formatter};
 
-const REGISTERS_MEMORY_SIZE: u16 = 16;
+const REGISTERS_MEMORY_SIZE: usize = 16;
 
 #[derive(Debug)]
 pub struct RegisterManager {
-    memory: [u8; REGISTERS_MEMORY_SIZE as usize],
+    memory: [u8; REGISTERS_MEMORY_SIZE],
 }
 
 impl RegisterManager {
     pub fn new() -> Self {
         Self {
-            memory: [
-                0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
-            ],
+            memory: [0b0; REGISTERS_MEMORY_SIZE],
         }
     }
 }
@@ -44,6 +42,7 @@ pub enum Register {
     Di,
 }
 
+use crate::instructions::operands::ImmediateValue;
 use crate::memory::Memory;
 use Register::*;
 
@@ -114,59 +113,82 @@ impl Register {
 }
 
 impl Memory<REGISTERS_MEMORY_SIZE> for RegisterManager {
-    fn read_byte(&self, address: u16) -> u8 {
-        self.verify_address(address);
-
-        self.memory[address as usize]
+    fn get_memory_mut(&mut self) -> &mut [u8; REGISTERS_MEMORY_SIZE] {
+        &mut self.memory
     }
 
-    fn read_word(&self, address: u16) -> u16 {
-        self.verify_address(address);
-
-        let low_byte_address = address + 1;
-
-        self.verify_address(low_byte_address);
-
-        let high = self.memory[address as usize];
-        let low = self.memory[low_byte_address as usize];
-
-        (u16::from(high) << 8) + u16::from(low)
-    }
-
-    fn write_byte(&mut self, address: u16, value: u8) {
-        self.verify_address(address);
-
-        self.memory[address as usize] = value;
-    }
-
-    fn write_word(&mut self, address: u16, value: u16) {
-        self.verify_address(address);
-
-        let low_byte_address = address + 1;
-
-        self.verify_address(low_byte_address);
-
-        let [high, low] = value.to_be_bytes();
-
-        self.memory[address as usize] = high;
-        self.memory[low_byte_address as usize] = low;
+    fn get_memory(&self) -> &[u8; REGISTERS_MEMORY_SIZE] {
+        &self.memory
     }
 }
 
 impl RegisterManager {
-    fn read_byte_from_register(&self, register: Register) -> u8 {
+    pub fn read_value(&self, register: Register) -> ImmediateValue {
+        match register {
+            Al => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Ax => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Cl => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Cx => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Dl => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Dx => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Bl => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Bx => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Ah => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Sp => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Ch => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Bp => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Dh => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Si => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+            Bh => ImmediateValue::SignedByte(i8::from_le_bytes([
+                self.read_byte_from_register(register)
+            ])),
+            Di => ImmediateValue::SignedWord(i16::from_le_bytes(
+                self.read_word_from_register(register).to_le_bytes(),
+            )),
+        }
+    }
+
+    pub fn read_byte_from_register(&self, register: Register) -> u8 {
         self.read_byte(register.to_memory_address())
     }
 
-    fn read_word_from_register(&self, register: Register) -> u16 {
+    pub fn read_word_from_register(&self, register: Register) -> u16 {
         self.read_word(register.to_memory_address())
     }
 
-    fn write_byte_to_register(&mut self, register: Register, value: u8) {
+    pub fn write_byte_to_register(&mut self, register: Register, value: u8) {
         self.write_byte(register.to_memory_address(), value);
     }
 
-    fn write_word_to_register(&mut self, register: Register, value: u16) {
+    pub fn write_word_to_register(&mut self, register: Register, value: u16) {
         self.write_word(register.to_memory_address(), value);
     }
 }
