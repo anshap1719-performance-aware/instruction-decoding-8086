@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
 const REGISTERS_MEMORY_SIZE: usize = 16;
@@ -190,5 +191,18 @@ impl RegisterManager {
 
     pub fn write_word_to_register(&mut self, register: Register, value: u16) {
         self.write_word(register.to_memory_address(), value);
+    }
+
+    pub fn register_memory_map(&self) -> Vec<(&str, i16)> {
+        vec![
+            ("ax", self.read_value(Ax).into()),
+            ("bx", self.read_value(Bx).into()),
+            ("cx", self.read_value(Cx).into()),
+            ("dx", self.read_value(Dx).into()),
+            ("sp", self.read_value(Sp).into()),
+            ("bp", self.read_value(Bp).into()),
+            ("si", self.read_value(Si).into()),
+            ("di", self.read_value(Di).into()),
+        ]
     }
 }

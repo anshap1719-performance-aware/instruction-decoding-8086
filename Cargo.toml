@@ -16,3 +16,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "instruction_decoding_8086"
 path = "src/main.rs"
+
+[dev-dependencies]
+insta = "1.31"

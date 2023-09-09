@@ -1,5 +1,4 @@
 use std::ffi::OsStr;
-use std::os::unix::prelude::CommandExt;
 use std::path::Path;
 use std::process::Command;
 
