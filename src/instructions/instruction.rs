@@ -3,7 +3,7 @@ use crate::instructions::operands::Operand::AccumulatorWide;
 use crate::memory::MemoryManager;
 use crate::mode::InstructionMode;
 use crate::register::RegisterManager;
-use crate::Wide;
+use crate::{SegmentRegisterManager, Wide};
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct AnyInstruction {
@@ -25,5 +25,10 @@ impl Default for AnyInstruction {
 }
 
 pub trait Instruction {
-    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager);
+    fn execute(
+        &self,
+        register_store: &mut RegisterManager,
+        memory_store: &mut MemoryManager,
+        segment_register_store: &mut SegmentRegisterManager,
+    );
 }

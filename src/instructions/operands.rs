@@ -1,6 +1,7 @@
 use crate::memory::EffectiveAddress;
 use crate::mode::InstructionMode;
 use crate::register::Register;
+use crate::segment_register::SegmentRegister;
 use crate::{BoxDynError, Byte, SignedByte, SignedWord, Wide};
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -167,6 +168,7 @@ pub enum Operand {
     Accumulator,
     AccumulatorWide,
     Register(Register),
+    SegmentRegister(SegmentRegister),
     Memory(EffectiveAddress),
     Immediate(ImmediateValue),
 }
@@ -179,6 +181,7 @@ impl Display for Operand {
             Operand::Register(register) => register.fmt(f),
             Operand::Memory(memory) => memory.fmt(f),
             Operand::Immediate(immediate) => immediate.fmt(f),
+            Operand::SegmentRegister(register) => register.fmt(f),
         }
     }
 }

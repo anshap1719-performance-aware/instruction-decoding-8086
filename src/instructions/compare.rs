@@ -1,10 +1,9 @@
 use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
-use crate::memory::MemoryManager;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
-use crate::register::RegisterManager;
+use crate::{MemoryManager, RegisterManager, SegmentRegisterManager};
 use std::fmt::{Display, Formatter};
 
 pub struct CompareInstruction(pub AnyInstruction);
@@ -53,7 +52,12 @@ impl ArithmeticInstruction for CompareInstruction {
 }
 
 impl Instruction for CompareInstruction {
-    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+    fn execute(
+        &self,
+        register_store: &mut RegisterManager,
+        memory_store: &mut MemoryManager,
+        segment_register_store: &mut SegmentRegisterManager,
+    ) {
         todo!()
     }
 }

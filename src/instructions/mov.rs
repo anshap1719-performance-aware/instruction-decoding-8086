@@ -4,6 +4,7 @@ use crate::memory::EffectiveAddress;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
 use crate::register::Register;
+use crate::segment_register::SegmentRegister;
 use crate::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::fmt::{Display, Formatter};
@@ -12,6 +13,7 @@ use std::io::BufReader;
 #[derive(Copy, Clone, PartialEq)]
 enum MovInstructionTypes {
     RegisterOrMemoryToOrFromRegister,
+    RegisterOrMemoryToOrFromSegmentRegister,
     ImmediateToRegisterOrMemory,
     ImmediateToRegister,
     MemoryToAccumulator,
@@ -23,6 +25,9 @@ impl From<Byte> for MovInstructionTypes {
         match value {
             value if bit_match!(value, (1, 0, 0, 0, 1, 0, _, _)) => {
                 Self::RegisterOrMemoryToOrFromRegister
+            }
+            value if bit_match!(value, (1, 0, 0, 0, 1, 1, _, _)) => {
+                Self::RegisterOrMemoryToOrFromSegmentRegister
             }
             value if bit_match!(value, (1, 1, 0, 0, 0, 1, 1, _)) => {
                 Self::ImmediateToRegisterOrMemory
@@ -38,7 +43,12 @@ impl From<Byte> for MovInstructionTypes {
 pub struct MovInstruction(pub AnyInstruction);
 
 impl Instruction for MovInstruction {
-    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+    fn execute(
+        &self,
+        register_store: &mut RegisterManager,
+        memory_store: &mut MemoryManager,
+        segment_register_store: &mut SegmentRegisterManager,
+    ) {
         let MovInstruction(AnyInstruction {
             source,
             destination,
@@ -75,6 +85,18 @@ impl Instruction for MovInstruction {
                     register_store,
                 )),
                 Operand::Immediate(immediate_value) => Some(*immediate_value),
+                Operand::SegmentRegister(register) => {
+                    if self.0.is_wide {
+                        Some(ImmediateValue::SignedWord(
+                            segment_register_store.read_word_from_segment_register(*register)
+                                as i16,
+                        ))
+                    } else {
+                        Some(ImmediateValue::SignedByte(
+                            segment_register_store.read_byte_from_segment_register(*register) as i8,
+                        ))
+                    }
+                }
             },
         };
 
@@ -120,6 +142,15 @@ impl Instruction for MovInstruction {
                     source,
                 ),
                 Operand::Immediate(_) => panic!("Cannot move a value to immediate"),
+                Operand::SegmentRegister(register) => {
+                    if self.0.is_wide {
+                        segment_register_store
+                            .write_word_to_segment_register(*register, source.into())
+                    } else {
+                        segment_register_store
+                            .write_byte_to_segment_register(*register, source.try_into().unwrap())
+                    }
+                }
             }
         } else {
             panic!("Mov instruction expects both a source and a destination");
@@ -191,6 +222,34 @@ impl MovInstruction {
                     }),
                     destination: if is_destination {
                         register
+                    } else {
+                        register_or_memory
+                    },
+                })
+            }
+            RegisterOrMemoryToOrFromSegmentRegister => {
+                let is_destination = bit_match!(instruction_byte, (_, _, _, _, _, _, 1, _));
+                let is_wide = bit_match!(instruction_byte, (_, _, _, _, _, _, _, 1));
+
+                let target_specifiers = reader.read_u8().expect("Failed to read instruction type");
+                let mode = InstructionMode::from(target_specifiers);
+
+                let segment_register_byte = (0b00_011_000 & target_specifiers) >> 3;
+
+                let segment_register =
+                    Operand::SegmentRegister(SegmentRegister::from(segment_register_byte));
+                let register_or_memory = Operand::read(reader, mode, target_specifiers, is_wide);
+
+                MovInstruction(AnyInstruction {
+                    is_wide,
+                    mode: Some(mode),
+                    source: Some(if is_destination {
+                        register_or_memory
+                    } else {
+                        segment_register
+                    }),
+                    destination: if is_destination {
+                        segment_register
                     } else {
                         register_or_memory
                     },

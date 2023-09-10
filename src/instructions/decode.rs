@@ -8,6 +8,7 @@ use crate::instructions::Instruction;
 use crate::memory::MemoryManager;
 use crate::prelude::*;
 use crate::register::RegisterManager;
+use crate::SegmentRegisterManager;
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -22,13 +23,28 @@ pub enum Instructions {
 }
 
 impl Instruction for Instructions {
-    fn execute(&self, register_store: &mut RegisterManager, memory_store: &mut MemoryManager) {
+    fn execute(
+        &self,
+        register_store: &mut RegisterManager,
+        memory_store: &mut MemoryManager,
+        segment_register_store: &mut SegmentRegisterManager,
+    ) {
         match self {
-            Instructions::Mov(instruction) => instruction.execute(register_store, memory_store),
-            Instructions::Add(instruction) => instruction.execute(register_store, memory_store),
-            Instructions::Sub(instruction) => instruction.execute(register_store, memory_store),
-            Instructions::Cmp(instruction) => instruction.execute(register_store, memory_store),
-            Instructions::Jump(instruction) => instruction.execute(register_store, memory_store),
+            Instructions::Mov(instruction) => {
+                instruction.execute(register_store, memory_store, segment_register_store)
+            }
+            Instructions::Add(instruction) => {
+                instruction.execute(register_store, memory_store, segment_register_store)
+            }
+            Instructions::Sub(instruction) => {
+                instruction.execute(register_store, memory_store, segment_register_store)
+            }
+            Instructions::Cmp(instruction) => {
+                instruction.execute(register_store, memory_store, segment_register_store)
+            }
+            Instructions::Jump(instruction) => {
+                instruction.execute(register_store, memory_store, segment_register_store)
+            }
         }
     }
 }

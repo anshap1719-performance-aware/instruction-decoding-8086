@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
 const REGISTERS_MEMORY_SIZE: usize = 16;
