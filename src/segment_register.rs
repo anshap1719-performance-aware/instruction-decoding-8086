@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use std::fmt::{Debug, Display, Formatter};
 
-const SEGMENT_REGISTERS_MEMORY_SIZE: usize = 16;
+const SEGMENT_REGISTERS_MEMORY_SIZE: usize = 8;
 
 #[derive(Debug)]
 pub struct SegmentRegisterManager {
@@ -91,7 +91,7 @@ impl SegmentRegisterManager {
     }
 
     pub fn write_byte_to_segment_register(&mut self, segment_register: SegmentRegister, value: u8) {
-        self.write_byte(segment_register.to_memory_address(), value);
+        self.write_word(segment_register.to_memory_address(), value as u16);
     }
 
     pub fn write_word_to_segment_register(

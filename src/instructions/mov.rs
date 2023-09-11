@@ -115,9 +115,9 @@ impl Instruction for MovInstruction {
                 },
                 Operand::AccumulatorWide => match source {
                     ImmediateValue::SignedByte(value) => {
-                        register_store.write_byte_to_register(
-                            Register::Al,
-                            u8::from_le_bytes(value.to_le_bytes()),
+                        register_store.write_word_to_register(
+                            Register::Ax,
+                            u8::from_le_bytes(value.to_le_bytes()) as u16,
                         );
                     }
                     ImmediateValue::SignedWord(value) => register_store.write_word_to_register(
@@ -127,10 +127,17 @@ impl Instruction for MovInstruction {
                 },
                 Operand::Register(register) => match source {
                     ImmediateValue::SignedByte(value) => {
-                        register_store.write_byte_to_register(
-                            *register,
-                            u8::from_le_bytes(value.to_le_bytes()),
-                        );
+                        if self.0.is_wide {
+                            register_store.write_word_to_register(
+                                *register,
+                                u8::from_le_bytes(value.to_le_bytes()) as u16,
+                            );
+                        } else {
+                            register_store.write_byte_to_register(
+                                *register,
+                                u8::from_le_bytes(value.to_le_bytes()),
+                            );
+                        }
                     }
                     ImmediateValue::SignedWord(value) => register_store
                         .write_word_to_register(*register, u16::from_le_bytes(value.to_le_bytes())),
@@ -148,7 +155,7 @@ impl Instruction for MovInstruction {
                             .write_word_to_segment_register(*register, source.into())
                     } else {
                         segment_register_store
-                            .write_byte_to_segment_register(*register, source.try_into().unwrap())
+                            .write_word_to_segment_register(*register, source.try_into().unwrap())
                     }
                 }
             }
@@ -229,7 +236,6 @@ impl MovInstruction {
             }
             RegisterOrMemoryToOrFromSegmentRegister => {
                 let is_destination = bit_match!(instruction_byte, (_, _, _, _, _, _, 1, _));
-                let is_wide = bit_match!(instruction_byte, (_, _, _, _, _, _, _, 1));
 
                 let target_specifiers = reader.read_u8().expect("Failed to read instruction type");
                 let mode = InstructionMode::from(target_specifiers);
@@ -238,10 +244,10 @@ impl MovInstruction {
 
                 let segment_register =
                     Operand::SegmentRegister(SegmentRegister::from(segment_register_byte));
-                let register_or_memory = Operand::read(reader, mode, target_specifiers, is_wide);
+                let register_or_memory = Operand::read(reader, mode, target_specifiers, true);
 
                 MovInstruction(AnyInstruction {
-                    is_wide,
+                    is_wide: true,
                     mode: Some(mode),
                     source: Some(if is_destination {
                         register_or_memory
