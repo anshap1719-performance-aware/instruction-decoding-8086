@@ -109,15 +109,88 @@ impl Display for EffectiveAddress {
     }
 }
 
-pub trait Memory<const MEMORY_SIZE: usize> {
+pub trait Memory<T: Sized, const MEMORY_SIZE: usize> {
     fn verify_address(&self, address: u16) {
         assert!(address <= MEMORY_SIZE as u16);
     }
 
-    fn get_memory_mut(&mut self) -> &mut [u8; MEMORY_SIZE];
+    fn get_memory_mut(&mut self) -> &mut [T; MEMORY_SIZE];
 
-    fn get_memory(&self) -> &[u8; MEMORY_SIZE];
+    fn get_memory(&self) -> &[T; MEMORY_SIZE];
+}
 
+pub trait ByteMemory<const MEMORY_SIZE: usize>
+where
+    Self: Memory<u8, MEMORY_SIZE>,
+{
+    fn read_byte(&self, address: u16) -> u8 {
+        self.verify_address(address);
+
+        self.get_memory()[address as usize]
+    }
+
+    fn read_signed_byte(&self, address: u16) -> i8 {
+        self.verify_address(address);
+
+        self.get_memory()[address as usize] as i8
+    }
+
+    fn read_word(&self, address: u16) -> u16 {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let memory = self.get_memory();
+
+        let high = memory[address as usize];
+        let low = memory[low_byte_address as usize];
+
+        (u16::from(high) << 8) + u16::from(low)
+    }
+
+    fn read_signed_word(&self, address: u16) -> i16 {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let memory = self.get_memory();
+
+        let high = memory[address as usize];
+        let low = memory[low_byte_address as usize];
+
+        (i16::from(high) << 8) + i16::from(low)
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        self.verify_address(address);
+
+        self.get_memory_mut()[address as usize] = value;
+    }
+
+    fn write_word(&mut self, address: u16, value: u16) {
+        self.verify_address(address);
+
+        let low_byte_address = address + 1;
+
+        self.verify_address(low_byte_address);
+
+        let [high, low] = value.to_be_bytes();
+
+        let memory = self.get_memory_mut();
+
+        memory[address as usize] = high;
+        memory[low_byte_address as usize] = low;
+    }
+}
+
+impl<T, const MEMORY_SIZE: usize> ByteMemory<MEMORY_SIZE> for T
+where
+    T: Memory<u8, MEMORY_SIZE>,
+{
     fn read_byte(&self, address: u16) -> u8 {
         self.verify_address(address);
 
@@ -276,7 +349,7 @@ impl MemoryManager {
     }
 }
 
-impl Memory<MAIN_MEMORY_SIZE> for MemoryManager {
+impl Memory<u8, MAIN_MEMORY_SIZE> for MemoryManager {
     fn get_memory_mut(&mut self) -> &mut [u8; MAIN_MEMORY_SIZE] {
         &mut self.memory
     }

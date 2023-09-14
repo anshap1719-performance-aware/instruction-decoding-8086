@@ -37,3 +37,5 @@ macro_rules! test_simulate_listing {
 test_simulate_listing!(listing_0043_immediate_movs);
 test_simulate_listing!(listing_0044_register_movs);
 test_simulate_listing!(listing_0045_challenge_register_movs);
+test_simulate_listing!(listing_0046_add_sub_cmp);
+test_simulate_listing!(listing_0047_challenge_flags);

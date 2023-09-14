@@ -1,3 +1,4 @@
+pub mod flag_register;
 pub mod helpers;
 mod instructions;
 pub mod memory;
@@ -6,6 +7,7 @@ pub mod prelude;
 pub mod register;
 pub mod segment_register;
 
+pub use crate::flag_register::FlagRegisterManager;
 pub use crate::instructions::decode::Instructions;
 pub use crate::instructions::Instruction;
 pub use crate::memory::MemoryManager;

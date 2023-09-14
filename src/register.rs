@@ -43,7 +43,7 @@ pub enum Register {
 }
 
 use crate::instructions::operands::ImmediateValue;
-use crate::memory::Memory;
+use crate::memory::{ByteMemory, Memory};
 use Register::*;
 
 impl From<Byte> for Register {
@@ -112,7 +112,7 @@ impl Register {
     }
 }
 
-impl Memory<REGISTERS_MEMORY_SIZE> for RegisterManager {
+impl Memory<u8, REGISTERS_MEMORY_SIZE> for RegisterManager {
     fn get_memory_mut(&mut self) -> &mut [u8; REGISTERS_MEMORY_SIZE] {
         &mut self.memory
     }

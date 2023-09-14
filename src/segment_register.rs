@@ -30,7 +30,7 @@ pub enum SegmentRegister {
     Ds,
 }
 
-use crate::memory::Memory;
+use crate::memory::{ByteMemory, Memory};
 use SegmentRegister::*;
 
 impl From<Byte> for SegmentRegister {
@@ -67,7 +67,7 @@ impl SegmentRegister {
     }
 }
 
-impl Memory<SEGMENT_REGISTERS_MEMORY_SIZE> for SegmentRegisterManager {
+impl Memory<u8, SEGMENT_REGISTERS_MEMORY_SIZE> for SegmentRegisterManager {
     fn get_memory_mut(&mut self) -> &mut [u8; SEGMENT_REGISTERS_MEMORY_SIZE] {
         &mut self.memory
     }
