@@ -1,7 +1,7 @@
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
 use crate::prelude::*;
-use crate::{MemoryManager, RegisterManager, SegmentRegisterManager};
+use crate::{FlagRegisterManager, MemoryManager, RegisterManager, SegmentRegisterManager};
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -359,6 +359,7 @@ impl Instruction for JumpInstructions {
         register_store: &mut RegisterManager,
         memory_store: &mut MemoryManager,
         segment_register_store: &mut SegmentRegisterManager,
+        _: &mut FlagRegisterManager,
     ) {
         todo!()
     }

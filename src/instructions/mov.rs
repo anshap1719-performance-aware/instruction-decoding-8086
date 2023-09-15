@@ -48,6 +48,7 @@ impl Instruction for MovInstruction {
         register_store: &mut RegisterManager,
         memory_store: &mut MemoryManager,
         segment_register_store: &mut SegmentRegisterManager,
+        _: &mut FlagRegisterManager,
     ) {
         let MovInstruction(AnyInstruction {
             source,
@@ -55,110 +56,23 @@ impl Instruction for MovInstruction {
             ..
         }) = self;
 
-        let source: Option<ImmediateValue> = match source {
-            None => None,
-            Some(source) => match source {
-                Operand::Accumulator => Some(ImmediateValue::SignedByte(i8::from_le_bytes([
-                    register_store.read_byte_from_register(Register::Al),
-                ]))),
-                Operand::AccumulatorWide => Some(ImmediateValue::SignedWord(i16::from_le_bytes(
-                    register_store
-                        .read_word_from_register(Register::Ax)
-                        .to_le_bytes(),
-                ))),
-                Operand::Register(register) => {
-                    if self.0.is_wide {
-                        Some(ImmediateValue::SignedWord(i16::from_le_bytes(
-                            register_store
-                                .read_word_from_register(*register)
-                                .to_le_bytes(),
-                        )))
-                    } else {
-                        Some(ImmediateValue::SignedByte(i8::from_le_bytes([
-                            register_store.read_byte_from_register(*register),
-                        ])))
-                    }
-                }
-                Operand::Memory(address) => Some(memory_store.read_memory_from_effective_address(
-                    *address,
-                    self.0.is_wide,
-                    register_store,
-                )),
-                Operand::Immediate(immediate_value) => Some(*immediate_value),
-                Operand::SegmentRegister(register) => {
-                    if self.0.is_wide {
-                        Some(ImmediateValue::SignedWord(
-                            segment_register_store.read_word_from_segment_register(*register)
-                                as i16,
-                        ))
-                    } else {
-                        Some(ImmediateValue::SignedByte(
-                            segment_register_store.read_byte_from_segment_register(*register) as i8,
-                        ))
-                    }
-                }
-            },
-        };
+        let value: Option<ImmediateValue> = source.as_ref().map(|source| {
+            source.to_immediate_value(
+                self.0.is_wide,
+                register_store,
+                memory_store,
+                segment_register_store,
+            )
+        });
 
-        if let Some(source) = source {
-            match destination {
-                Operand::Accumulator => match source {
-                    ImmediateValue::SignedByte(value) => {
-                        register_store.write_byte_to_register(
-                            Register::Al,
-                            u8::from_le_bytes(value.to_le_bytes()),
-                        );
-                    }
-                    ImmediateValue::SignedWord(_) => {
-                        panic!("Cannot write word to Al")
-                    }
-                },
-                Operand::AccumulatorWide => match source {
-                    ImmediateValue::SignedByte(value) => {
-                        register_store.write_word_to_register(
-                            Register::Ax,
-                            u8::from_le_bytes(value.to_le_bytes()) as u16,
-                        );
-                    }
-                    ImmediateValue::SignedWord(value) => register_store.write_word_to_register(
-                        Register::Ax,
-                        u16::from_le_bytes(value.to_le_bytes()),
-                    ),
-                },
-                Operand::Register(register) => match source {
-                    ImmediateValue::SignedByte(value) => {
-                        if self.0.is_wide {
-                            register_store.write_word_to_register(
-                                *register,
-                                u8::from_le_bytes(value.to_le_bytes()) as u16,
-                            );
-                        } else {
-                            register_store.write_byte_to_register(
-                                *register,
-                                u8::from_le_bytes(value.to_le_bytes()),
-                            );
-                        }
-                    }
-                    ImmediateValue::SignedWord(value) => register_store
-                        .write_word_to_register(*register, u16::from_le_bytes(value.to_le_bytes())),
-                },
-                Operand::Memory(address) => memory_store.write_to_effective_memory_address(
-                    *address,
-                    self.0.is_wide,
-                    register_store,
-                    source,
-                ),
-                Operand::Immediate(_) => panic!("Cannot move a value to immediate"),
-                Operand::SegmentRegister(register) => {
-                    if self.0.is_wide {
-                        segment_register_store
-                            .write_word_to_segment_register(*register, source.into())
-                    } else {
-                        segment_register_store
-                            .write_word_to_segment_register(*register, source.try_into().unwrap())
-                    }
-                }
-            }
+        if let Some(value) = value {
+            destination.write_value(
+                value,
+                self.0.is_wide,
+                register_store,
+                memory_store,
+                segment_register_store,
+            );
         } else {
             panic!("Mov instruction expects both a source and a destination");
         }

@@ -289,26 +289,28 @@ impl MemoryManager {
             EffectiveAddress::RegisterPlusByte(register, value) => {
                 let address = register_store.read_value(register) + value;
 
-                address as u16
+                address.value() as u16
             }
             EffectiveAddress::RegisterPlusWord(register, value) => {
                 let address = register_store.read_value(register) + value;
 
-                address as u16
+                address.value() as u16
             }
             EffectiveAddress::RegisterSumPlusByte(register1, register2, value) => {
-                let address = register_store.read_value(register1)
-                    + register_store.read_value(register2)
+                let address = (register_store.read_value(register1)
+                    + register_store.read_value(register2))
+                .value()
                     + (value as i16);
 
-                address as u16
+                address.value() as u16
             }
             EffectiveAddress::RegisterSumPlusWord(register1, register2, value) => {
-                let address = register_store.read_value(register1)
-                    + register_store.read_value(register2)
+                let address = (register_store.read_value(register1)
+                    + register_store.read_value(register2))
+                .value()
                     + value;
 
-                address as u16
+                address.value() as u16
             }
             EffectiveAddress::DirectAddress(address) => address,
         }

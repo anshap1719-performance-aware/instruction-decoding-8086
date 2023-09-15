@@ -32,6 +32,7 @@ pub enum FlagRegister {
     Overflow,
 }
 
+use crate::instructions::operands::ArithmeticResult;
 use crate::memory::Memory;
 use FlagRegister::*;
 
@@ -88,5 +89,61 @@ impl FlagRegisterManager {
 
     pub fn unset_flag(&mut self, flag: FlagRegister) {
         self.get_memory_mut()[flag.to_memory_address() as usize] = false;
+    }
+
+    pub fn set_flags_on_op(&mut self, result: ArithmeticResult) {
+        let ArithmeticResult {
+            carry,
+            overflow,
+            zero,
+            sign,
+            ..
+        } = result;
+
+        let value: i16 = result.value().into();
+
+        if value.count_ones() % 2 == 0 {
+            self.set_flag(Parity)
+        } else {
+            self.unset_flag(Parity)
+        }
+
+        if carry {
+            self.set_flag(Carry);
+        } else {
+            self.unset_flag(Carry);
+        }
+
+        if overflow {
+            self.set_flag(Overflow);
+        } else {
+            self.unset_flag(Overflow);
+        }
+
+        if zero {
+            self.set_flag(Zero);
+        } else {
+            self.unset_flag(Zero);
+        }
+
+        if sign {
+            self.set_flag(Sign);
+        } else {
+            self.unset_flag(Sign);
+        }
+    }
+
+    pub fn flag_register_memory_map(&self) -> Vec<(&str, bool)> {
+        vec![
+            ("carry", self.get_flag(Carry)),
+            ("parity", self.get_flag(Parity)),
+            ("auxiliaryCarry", self.get_flag(AuxiliaryCarry)),
+            ("zero", self.get_flag(Zero)),
+            ("sign", self.get_flag(Sign)),
+            ("trap", self.get_flag(Trap)),
+            ("interrupt", self.get_flag(Interrupt)),
+            ("direction", self.get_flag(Direction)),
+            ("overflow", self.get_flag(Overflow)),
+        ]
     }
 }

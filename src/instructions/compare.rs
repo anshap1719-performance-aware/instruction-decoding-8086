@@ -3,7 +3,7 @@ use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
 use crate::mode::InstructionMode;
 use crate::prelude::*;
-use crate::{MemoryManager, RegisterManager, SegmentRegisterManager};
+use crate::{FlagRegisterManager, MemoryManager, RegisterManager, SegmentRegisterManager};
 use std::fmt::{Display, Formatter};
 
 pub struct CompareInstruction(pub AnyInstruction);
@@ -57,7 +57,35 @@ impl Instruction for CompareInstruction {
         register_store: &mut RegisterManager,
         memory_store: &mut MemoryManager,
         segment_register_store: &mut SegmentRegisterManager,
+        flag_register_store: &mut FlagRegisterManager,
     ) {
-        todo!()
+        let CompareInstruction(AnyInstruction {
+            source,
+            destination,
+            ..
+        }) = self;
+
+        let rhs = source
+            .as_ref()
+            .map(|source| {
+                source.to_immediate_value(
+                    self.0.is_wide,
+                    register_store,
+                    memory_store,
+                    segment_register_store,
+                )
+            })
+            .expect("add operation expects both source and destination");
+
+        let lhs = destination.to_immediate_value(
+            self.0.is_wide,
+            register_store,
+            memory_store,
+            segment_register_store,
+        );
+
+        let op_result = lhs - rhs;
+
+        flag_register_store.set_flags_on_op(op_result);
     }
 }

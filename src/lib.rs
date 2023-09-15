@@ -23,6 +23,7 @@ pub fn simulate(
     register_store: &mut RegisterManager,
     memory_store: &mut MemoryManager,
     segment_register_store: &mut SegmentRegisterManager,
+    flag_register_store: &mut FlagRegisterManager,
 ) {
     loop {
         let Ok(instruction_byte) = reader.read_u8() else {
@@ -31,7 +32,12 @@ pub fn simulate(
 
         let instruction = Instructions::read(&mut reader, instruction_byte);
 
-        instruction.execute(register_store, memory_store, segment_register_store);
+        instruction.execute(
+            register_store,
+            memory_store,
+            segment_register_store,
+            flag_register_store,
+        );
     }
 }
 
