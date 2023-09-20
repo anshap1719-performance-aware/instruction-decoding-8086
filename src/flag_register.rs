@@ -97,6 +97,7 @@ impl FlagRegisterManager {
             overflow,
             zero,
             sign,
+            auxiliary_carry,
             ..
         } = result;
 
@@ -130,6 +131,12 @@ impl FlagRegisterManager {
             self.set_flag(Sign);
         } else {
             self.unset_flag(Sign);
+        }
+
+        if auxiliary_carry {
+            self.set_flag(AuxiliaryCarry);
+        } else {
+            self.unset_flag(AuxiliaryCarry);
         }
     }
 

@@ -113,6 +113,7 @@ impl TryFrom<ArithmeticResult> for u8 {
 pub struct ArithmeticResult<Value = ImmediateValue> {
     value: Value,
     pub carry: bool,
+    pub auxiliary_carry: bool,
     pub overflow: bool,
     pub zero: bool,
     pub sign: bool,
@@ -122,6 +123,32 @@ impl<Value> ArithmeticResult<Value> {
     pub fn value(self) -> Value {
         self.value
     }
+}
+
+fn compute_carry_on_addition(lhs: i16, rhs: i16, value: i16) -> (bool, bool) {
+    let msb_lhs_set = ((lhs >> 15) & 1) == 1;
+    let msb_rhs_set = ((rhs >> 15) & 1) == 1;
+
+    let msb_lhs_lower_nibble = ((lhs >> 3) & 1) == 1;
+    let msb_rhs_lower_nibble = ((lhs >> 3) & 1) == 1;
+
+    let carry = (msb_lhs_set || msb_rhs_set) && ((value >> 15) & 1) == 0;
+    let auxiliary_carry = (msb_lhs_lower_nibble || msb_rhs_lower_nibble) && ((value >> 3) & 1) == 0;
+
+    (carry, auxiliary_carry)
+}
+
+fn compute_borrow_on_subtraction(lhs: i16, rhs: i16, value: i16) -> (bool, bool) {
+    let msb_lhs_set = ((lhs >> 15) & 1) == 0;
+    let msb_rhs_set = ((rhs >> 15) & 1) == 0;
+
+    let msb_lhs_lower_nibble = ((lhs >> 3) & 1) == 0;
+    let msb_rhs_lower_nibble = ((lhs >> 3) & 1) == 0;
+
+    let carry = (msb_lhs_set || msb_rhs_set) && ((value >> 15) & 1) == 1;
+    let auxiliary_carry = (msb_lhs_lower_nibble || msb_rhs_lower_nibble) && ((value >> 3) & 1) == 1;
+
+    (carry, auxiliary_carry)
 }
 
 impl Add for ImmediateValue {
@@ -139,12 +166,14 @@ impl Add for ImmediateValue {
         };
 
         let (value, overflow) = lhs.overflowing_add(rhs);
+        let (carry, auxiliary_carry) = compute_carry_on_addition(lhs, rhs, value);
 
         ArithmeticResult {
             value: ImmediateValue::SignedWord(value),
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }
@@ -165,12 +194,14 @@ impl Sub for ImmediateValue {
         };
 
         let (value, overflow) = lhs.overflowing_sub(rhs);
+        let (carry, auxiliary_carry) = compute_borrow_on_subtraction(lhs, rhs, value);
 
         ArithmeticResult {
             value: ImmediateValue::SignedWord(value),
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }
@@ -186,12 +217,14 @@ impl Add<SignedByte> for ImmediateValue {
         };
 
         let (value, overflow) = lhs.overflowing_add(rhs as i16);
+        let (carry, auxiliary_carry) = compute_carry_on_addition(lhs, rhs as i16, value);
 
         ArithmeticResult {
             value,
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }
@@ -207,12 +240,14 @@ impl Sub<SignedByte> for ImmediateValue {
         };
 
         let (value, overflow) = lhs.overflowing_sub(rhs as i16);
+        let (carry, auxiliary_carry) = compute_borrow_on_subtraction(lhs, rhs as i16, value);
 
         ArithmeticResult {
             value,
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }
@@ -227,13 +262,15 @@ impl Add<SignedWord> for ImmediateValue {
             ImmediateValue::SignedWord(value) => value,
         };
 
-        let (value, overflow) = lhs.overflowing_add(rhs as i16);
+        let (value, overflow) = lhs.overflowing_add(rhs);
+        let (carry, auxiliary_carry) = compute_carry_on_addition(lhs, rhs, value);
 
         ArithmeticResult {
             value,
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }
@@ -248,13 +285,15 @@ impl Sub<SignedWord> for ImmediateValue {
             ImmediateValue::SignedWord(value) => value,
         };
 
-        let (value, overflow) = lhs.overflowing_sub(rhs as i16);
+        let (value, overflow) = lhs.overflowing_sub(rhs);
+        let (carry, auxiliary_carry) = compute_borrow_on_subtraction(lhs, rhs, value);
 
         ArithmeticResult {
             value,
             zero: value == 0,
             overflow,
-            carry: overflow,
+            carry,
+            auxiliary_carry,
             sign: value.is_negative(),
         }
     }

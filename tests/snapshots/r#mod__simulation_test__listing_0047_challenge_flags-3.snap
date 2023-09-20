@@ -1,0 +1,42 @@
+---
+source: tests/simulation_test.rs
+expression: flag_register_store.flag_register_memory_map()
+---
+[
+    (
+        "carry",
+        true,
+    ),
+    (
+        "parity",
+        true,
+    ),
+    (
+        "auxiliaryCarry",
+        true,
+    ),
+    (
+        "zero",
+        false,
+    ),
+    (
+        "sign",
+        true,
+    ),
+    (
+        "trap",
+        false,
+    ),
+    (
+        "interrupt",
+        false,
+    ),
+    (
+        "direction",
+        false,
+    ),
+    (
+        "overflow",
+        false,
+    ),
+]

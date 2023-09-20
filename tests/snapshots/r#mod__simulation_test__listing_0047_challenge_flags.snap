@@ -1,0 +1,38 @@
+---
+source: tests/simulation_test.rs
+expression: register_store.register_memory_map()
+---
+[
+    (
+        "ax",
+        0,
+    ),
+    (
+        "bx",
+        -25435,
+    ),
+    (
+        "cx",
+        0,
+    ),
+    (
+        "dx",
+        10,
+    ),
+    (
+        "sp",
+        99,
+    ),
+    (
+        "bp",
+        98,
+    ),
+    (
+        "si",
+        0,
+    ),
+    (
+        "di",
+        0,
+    ),
+]
