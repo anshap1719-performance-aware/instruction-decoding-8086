@@ -38,3 +38,6 @@ test_simulate_listing!(listing_0047_challenge_flags);
 test_simulate_listing!(listing_0048_ip_register);
 test_simulate_listing!(listing_0049_conditional_jumps);
 test_simulate_listing!(listing_0050_challenge_jumps);
+test_simulate_listing!(listing_0051_memory_mov);
+test_simulate_listing!(listing_0052_memory_add_loop);
+test_simulate_listing!(listing_0053_add_loop_challenge);
