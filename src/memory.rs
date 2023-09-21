@@ -262,13 +262,15 @@ pub struct MemoryManager {
     memory: [u8; MAIN_MEMORY_SIZE],
 }
 
-impl MemoryManager {
-    pub fn new() -> Self {
+impl Default for MemoryManager {
+    fn default() -> Self {
         Self {
             memory: [0b0; MAIN_MEMORY_SIZE],
         }
     }
+}
 
+impl MemoryManager {
     pub fn effective_address_to_address(
         &self,
         address: EffectiveAddress,
@@ -338,7 +340,7 @@ impl MemoryManager {
         register_manager: &RegisterManager,
         value: ImmediateValue,
     ) {
-        let address = self.effective_address_to_address(address, &register_manager);
+        let address = self.effective_address_to_address(address, register_manager);
 
         if is_wide {
             self.write_word(address, value.into())

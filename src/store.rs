@@ -2,7 +2,7 @@ use crate::instructions::operands::ImmediateValue;
 use crate::memory::{ByteMemory, EffectiveAddress};
 use crate::{FlagRegisterManager, MemoryManager, RegisterManager, SegmentRegisterManager};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Store {
     register_store: RegisterManager,
     memory_store: MemoryManager,
@@ -11,15 +11,6 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn new() -> Self {
-        Self {
-            register_store: RegisterManager::new(),
-            memory_store: MemoryManager::new(),
-            segment_register_store: SegmentRegisterManager::new(),
-            flag_register_store: FlagRegisterManager::new(),
-        }
-    }
-
     pub fn register_store(&self) -> &RegisterManager {
         &self.register_store
     }

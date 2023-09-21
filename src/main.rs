@@ -21,7 +21,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 fn main() {
-    let store = &mut Store::new();
+    let store = &mut Store::default();
 
     let args = args().collect::<Vec<_>>();
 

@@ -1,8 +1,6 @@
 use crate::flag_register::FlagRegister;
 use crate::instructions::operands::{ImmediateValue, Operand};
-use crate::instructions::subtract::SubtractInstruction;
 use crate::instructions::{AnyInstruction, Instruction};
-use crate::memory::Memory;
 use crate::prelude::*;
 use crate::register::Register::Cx;
 use crate::store::Store;

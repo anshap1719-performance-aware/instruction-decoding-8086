@@ -1,5 +1,7 @@
+use crate::memory::{ByteMemory, Memory};
 use crate::prelude::*;
 use std::fmt::{Debug, Display, Formatter};
+use SegmentRegister::*;
 
 const SEGMENT_REGISTERS_MEMORY_SIZE: usize = 8;
 
@@ -8,8 +10,8 @@ pub struct SegmentRegisterManager {
     memory: [u8; SEGMENT_REGISTERS_MEMORY_SIZE],
 }
 
-impl SegmentRegisterManager {
-    pub fn new() -> Self {
+impl Default for SegmentRegisterManager {
+    fn default() -> Self {
         Self {
             memory: [0b0; SEGMENT_REGISTERS_MEMORY_SIZE],
         }
@@ -29,9 +31,6 @@ pub enum SegmentRegister {
     Ss,
     Ds,
 }
-
-use crate::memory::{ByteMemory, Memory};
-use SegmentRegister::*;
 
 impl From<Byte> for SegmentRegister {
     fn from(value: Byte) -> Self {

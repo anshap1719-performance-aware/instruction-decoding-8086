@@ -7,12 +7,6 @@ pub struct FlagRegisterManager {
     memory: [bool; REGISTERS_MEMORY_SIZE],
 }
 
-impl FlagRegisterManager {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
 impl Display for FlagRegisterManager {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.memory.fmt(f)

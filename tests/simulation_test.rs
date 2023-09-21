@@ -7,7 +7,7 @@ macro_rules! test_simulate_listing {
     ($listing_name:ident) => {
         #[test]
         fn $listing_name() {
-            let store = &mut instruction_decoding_8086::Store::new();
+            let store = &mut instruction_decoding_8086::Store::default();
 
             let path = Path::new(file!())
                 .parent()

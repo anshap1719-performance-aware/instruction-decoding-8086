@@ -8,8 +8,8 @@ pub struct RegisterManager {
     memory: [u8; REGISTERS_MEMORY_SIZE],
 }
 
-impl RegisterManager {
-    pub fn new() -> Self {
+impl Default for RegisterManager {
+    fn default() -> Self {
         Self {
             memory: [0b0; REGISTERS_MEMORY_SIZE],
         }
