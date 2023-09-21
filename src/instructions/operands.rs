@@ -2,14 +2,12 @@ use crate::memory::EffectiveAddress;
 use crate::mode::InstructionMode;
 use crate::register::Register;
 use crate::segment_register::SegmentRegister;
-use crate::{
-    BoxDynError, Byte, MemoryManager, RegisterManager, SegmentRegisterManager, SignedByte,
-    SignedWord, Wide,
-};
+use crate::store::Store;
+use crate::{BoxDynError, Byte, SignedByte, SignedWord, Wide};
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::BufReader;
-use std::ops::{Add, Shr, Sub};
+use std::ops::{Add, Sub};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum ImmediateValue {
@@ -353,65 +351,62 @@ impl Operand {
         }
     }
 
-    pub fn to_immediate_value(
-        self,
-        is_wide_op: bool,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-    ) -> ImmediateValue {
+    pub fn to_immediate_value(self, is_wide_op: bool, store: &mut Store) -> ImmediateValue {
         match self {
-            Operand::Accumulator => ImmediateValue::SignedByte(i8::from_le_bytes([
-                register_store.read_byte_from_register(Register::Al)
-            ])),
+            Operand::Accumulator => ImmediateValue::SignedByte(i8::from_le_bytes([store
+                .register_store()
+                .read_byte_from_register(Register::Al)])),
             Operand::AccumulatorWide => ImmediateValue::SignedWord(i16::from_le_bytes(
-                register_store
+                store
+                    .register_store()
                     .read_word_from_register(Register::Ax)
                     .to_le_bytes(),
             )),
             Operand::Register(register) => {
                 if is_wide_op {
                     ImmediateValue::SignedWord(i16::from_le_bytes(
-                        register_store
+                        store
+                            .register_store()
                             .read_word_from_register(register)
                             .to_le_bytes(),
                     ))
                 } else {
-                    ImmediateValue::SignedByte(i8::from_le_bytes([
-                        register_store.read_byte_from_register(register)
-                    ]))
+                    ImmediateValue::SignedByte(i8::from_le_bytes([store
+                        .register_store()
+                        .read_byte_from_register(register)]))
                 }
             }
-            Operand::Memory(address) => {
-                memory_store.read_memory_from_effective_address(address, is_wide_op, register_store)
-            }
+            Operand::Memory(address) => store.memory_store().read_memory_from_effective_address(
+                address,
+                is_wide_op,
+                store.register_store(),
+            ),
             Operand::Immediate(immediate_value) => immediate_value,
             Operand::SegmentRegister(register) => {
                 if is_wide_op {
                     ImmediateValue::SignedWord(
-                        segment_register_store.read_word_from_segment_register(register) as i16,
+                        store
+                            .segment_register_store()
+                            .read_word_from_segment_register(register)
+                            as i16,
                     )
                 } else {
                     ImmediateValue::SignedByte(
-                        segment_register_store.read_byte_from_segment_register(register) as i8,
+                        store
+                            .segment_register_store()
+                            .read_byte_from_segment_register(register)
+                            as i8,
                     )
                 }
             }
         }
     }
 
-    pub fn write_value(
-        self,
-        value: ImmediateValue,
-        is_wide_op: bool,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-    ) {
+    pub fn write_value(self, value: ImmediateValue, is_wide_op: bool, store: &mut Store) {
         match self {
             Operand::Accumulator => match value {
                 ImmediateValue::SignedByte(value) => {
-                    register_store.write_byte_to_register(
+                    store.register_store_mut().write_byte_to_register(
                         Register::Al,
                         u8::from_le_bytes(value.to_le_bytes()),
                     );
@@ -422,43 +417,45 @@ impl Operand {
             },
             Operand::AccumulatorWide => match value {
                 ImmediateValue::SignedByte(value) => {
-                    register_store.write_word_to_register(
+                    store.register_store_mut().write_word_to_register(
                         Register::Ax,
                         u8::from_le_bytes(value.to_le_bytes()) as u16,
                     );
                 }
-                ImmediateValue::SignedWord(value) => register_store
+                ImmediateValue::SignedWord(value) => store
+                    .register_store_mut()
                     .write_word_to_register(Register::Ax, u16::from_le_bytes(value.to_le_bytes())),
             },
             Operand::Register(register) => match value {
                 ImmediateValue::SignedByte(value) => {
                     if is_wide_op {
-                        register_store.write_word_to_register(
+                        store.register_store_mut().write_word_to_register(
                             register,
                             u8::from_le_bytes(value.to_le_bytes()) as u16,
                         );
                     } else {
-                        register_store.write_byte_to_register(
+                        store.register_store_mut().write_byte_to_register(
                             register,
                             u8::from_le_bytes(value.to_le_bytes()),
                         );
                     }
                 }
-                ImmediateValue::SignedWord(value) => register_store
+                ImmediateValue::SignedWord(value) => store
+                    .register_store_mut()
                     .write_word_to_register(register, u16::from_le_bytes(value.to_le_bytes())),
             },
-            Operand::Memory(address) => memory_store.write_to_effective_memory_address(
-                address,
-                is_wide_op,
-                register_store,
-                value,
-            ),
+            Operand::Memory(address) => {
+                store.write_to_effective_memory_address(address, is_wide_op, value)
+            }
             Operand::Immediate(_) => panic!("Cannot move a value to immediate"),
             Operand::SegmentRegister(register) => {
                 if is_wide_op {
-                    segment_register_store.write_word_to_segment_register(register, value.into())
+                    store
+                        .segment_register_store_mut()
+                        .write_word_to_segment_register(register, value.into())
                 } else {
-                    segment_register_store
+                    store
+                        .segment_register_store_mut()
                         .write_word_to_segment_register(register, value.try_into().unwrap())
                 }
             }

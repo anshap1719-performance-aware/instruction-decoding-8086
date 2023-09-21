@@ -269,44 +269,44 @@ impl MemoryManager {
         }
     }
 
-    fn effective_address_to_address(
+    pub fn effective_address_to_address(
         &self,
         address: EffectiveAddress,
-        register_store: &RegisterManager,
+        register_manager: &RegisterManager,
     ) -> u16 {
         match address {
             EffectiveAddress::Register(register) => {
-                let address: i16 = register_store.read_value(register).into();
+                let address: i16 = register_manager.read_value(register).into();
                 address as u16
             }
             EffectiveAddress::RegisterSum(register1, register2) => {
-                let address: i16 = (register_store.read_value(register1)
-                    + register_store.read_value(register2))
+                let address: i16 = (register_manager.read_value(register1)
+                    + register_manager.read_value(register2))
                 .into();
 
                 address as u16
             }
             EffectiveAddress::RegisterPlusByte(register, value) => {
-                let address = register_store.read_value(register) + value;
+                let address = register_manager.read_value(register) + value;
 
                 address.value() as u16
             }
             EffectiveAddress::RegisterPlusWord(register, value) => {
-                let address = register_store.read_value(register) + value;
+                let address = register_manager.read_value(register) + value;
 
                 address.value() as u16
             }
             EffectiveAddress::RegisterSumPlusByte(register1, register2, value) => {
-                let address = (register_store.read_value(register1)
-                    + register_store.read_value(register2))
+                let address = (register_manager.read_value(register1)
+                    + register_manager.read_value(register2))
                 .value()
                     + (value as i16);
 
                 address.value() as u16
             }
             EffectiveAddress::RegisterSumPlusWord(register1, register2, value) => {
-                let address = (register_store.read_value(register1)
-                    + register_store.read_value(register2))
+                let address = (register_manager.read_value(register1)
+                    + register_manager.read_value(register2))
                 .value()
                     + value;
 
@@ -320,9 +320,9 @@ impl MemoryManager {
         &self,
         address: EffectiveAddress,
         is_wide: bool,
-        register_store: &mut RegisterManager,
+        register_manager: &RegisterManager,
     ) -> ImmediateValue {
-        let address = self.effective_address_to_address(address, register_store);
+        let address = self.effective_address_to_address(address, register_manager);
 
         if is_wide {
             self.read_signed_word(address).into()
@@ -335,10 +335,10 @@ impl MemoryManager {
         &mut self,
         address: EffectiveAddress,
         is_wide: bool,
-        register_store: &mut RegisterManager,
+        register_manager: &RegisterManager,
         value: ImmediateValue,
     ) {
-        let address = self.effective_address_to_address(address, register_store);
+        let address = self.effective_address_to_address(address, &register_manager);
 
         if is_wide {
             self.write_word(address, value.into())

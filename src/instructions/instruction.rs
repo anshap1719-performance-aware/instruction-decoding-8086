@@ -1,9 +1,10 @@
 use crate::instructions::operands::Operand;
 use crate::instructions::operands::Operand::AccumulatorWide;
-use crate::memory::MemoryManager;
 use crate::mode::InstructionMode;
-use crate::register::RegisterManager;
-use crate::{FlagRegisterManager, SegmentRegisterManager, Wide};
+use crate::store::Store;
+use crate::Wide;
+use std::fs::File;
+use std::io::BufReader;
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct AnyInstruction {
@@ -25,11 +26,5 @@ impl Default for AnyInstruction {
 }
 
 pub trait Instruction {
-    fn execute(
-        &self,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-        flag_register_store: &mut FlagRegisterManager,
-    );
+    fn execute(&self, reader: &BufReader<File>, store: &mut Store);
 }

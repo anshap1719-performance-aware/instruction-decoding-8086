@@ -5,10 +5,8 @@ use crate::instructions::compare::CompareInstruction;
 use crate::instructions::jump::JumpInstructions;
 use crate::instructions::subtract::SubtractInstruction;
 use crate::instructions::Instruction;
-use crate::memory::MemoryManager;
 use crate::prelude::*;
-use crate::register::RegisterManager;
-use crate::{FlagRegisterManager, SegmentRegisterManager};
+use crate::store::Store;
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -23,44 +21,13 @@ pub enum Instructions {
 }
 
 impl Instruction for Instructions {
-    fn execute(
-        &self,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-        flag_register_store: &mut FlagRegisterManager,
-    ) {
+    fn execute(&self, reader: &BufReader<File>, store: &mut Store) {
         match self {
-            Instructions::Mov(instruction) => instruction.execute(
-                register_store,
-                memory_store,
-                segment_register_store,
-                flag_register_store,
-            ),
-            Instructions::Add(instruction) => instruction.execute(
-                register_store,
-                memory_store,
-                segment_register_store,
-                flag_register_store,
-            ),
-            Instructions::Sub(instruction) => instruction.execute(
-                register_store,
-                memory_store,
-                segment_register_store,
-                flag_register_store,
-            ),
-            Instructions::Cmp(instruction) => instruction.execute(
-                register_store,
-                memory_store,
-                segment_register_store,
-                flag_register_store,
-            ),
-            Instructions::Jump(instruction) => instruction.execute(
-                register_store,
-                memory_store,
-                segment_register_store,
-                flag_register_store,
-            ),
+            Instructions::Mov(instruction) => instruction.execute(reader, store),
+            Instructions::Add(instruction) => instruction.execute(reader, store),
+            Instructions::Sub(instruction) => instruction.execute(reader, store),
+            Instructions::Cmp(instruction) => instruction.execute(reader, store),
+            Instructions::Jump(instruction) => instruction.execute(reader, store),
         }
     }
 }

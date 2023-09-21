@@ -3,8 +3,10 @@ use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
 use crate::mode::InstructionMode;
 use crate::prelude::*;
-use crate::{FlagRegisterManager, MemoryManager, RegisterManager, SegmentRegisterManager};
+use crate::store::Store;
 use std::fmt::{Display, Formatter};
+use std::fs::File;
+use std::io::BufReader;
 
 pub struct CompareInstruction(pub AnyInstruction);
 
@@ -52,13 +54,7 @@ impl ArithmeticInstruction for CompareInstruction {
 }
 
 impl Instruction for CompareInstruction {
-    fn execute(
-        &self,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-        flag_register_store: &mut FlagRegisterManager,
-    ) {
+    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
         let CompareInstruction(AnyInstruction {
             source,
             destination,
@@ -67,25 +63,13 @@ impl Instruction for CompareInstruction {
 
         let rhs = source
             .as_ref()
-            .map(|source| {
-                source.to_immediate_value(
-                    self.0.is_wide,
-                    register_store,
-                    memory_store,
-                    segment_register_store,
-                )
-            })
+            .map(|source| source.to_immediate_value(self.0.is_wide, store))
             .expect("add operation expects both source and destination");
 
-        let lhs = destination.to_immediate_value(
-            self.0.is_wide,
-            register_store,
-            memory_store,
-            segment_register_store,
-        );
+        let lhs = destination.to_immediate_value(self.0.is_wide, store);
 
         let op_result = lhs - rhs;
 
-        flag_register_store.set_flags_on_op(op_result);
+        store.flag_register_store_mut().set_flags_on_op(op_result);
     }
 }

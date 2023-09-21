@@ -1,7 +1,7 @@
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
 use crate::prelude::*;
-use crate::{FlagRegisterManager, MemoryManager, RegisterManager, SegmentRegisterManager};
+use crate::store::Store;
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -354,13 +354,7 @@ impl TryFrom<(Byte, &mut BufReader<File>)> for JumpInstructions {
 }
 
 impl Instruction for JumpInstructions {
-    fn execute(
-        &self,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-        _: &mut FlagRegisterManager,
-    ) {
+    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
         todo!()
     }
 }

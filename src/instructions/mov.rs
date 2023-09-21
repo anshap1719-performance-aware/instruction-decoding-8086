@@ -43,36 +43,19 @@ impl From<Byte> for MovInstructionTypes {
 pub struct MovInstruction(pub AnyInstruction);
 
 impl Instruction for MovInstruction {
-    fn execute(
-        &self,
-        register_store: &mut RegisterManager,
-        memory_store: &mut MemoryManager,
-        segment_register_store: &mut SegmentRegisterManager,
-        _: &mut FlagRegisterManager,
-    ) {
+    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
         let MovInstruction(AnyInstruction {
             source,
             destination,
             ..
         }) = self;
 
-        let value: Option<ImmediateValue> = source.as_ref().map(|source| {
-            source.to_immediate_value(
-                self.0.is_wide,
-                register_store,
-                memory_store,
-                segment_register_store,
-            )
-        });
+        let value: Option<ImmediateValue> = source
+            .as_ref()
+            .map(|source| source.to_immediate_value(self.0.is_wide, store));
 
         if let Some(value) = value {
-            destination.write_value(
-                value,
-                self.0.is_wide,
-                register_store,
-                memory_store,
-                segment_register_store,
-            );
+            destination.write_value(value, self.0.is_wide, store);
         } else {
             panic!("Mov instruction expects both a source and a destination");
         }

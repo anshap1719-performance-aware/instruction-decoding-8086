@@ -6,25 +6,21 @@ mod mode;
 pub mod prelude;
 pub mod register;
 pub mod segment_register;
+pub mod store;
 
-pub use crate::flag_register::FlagRegisterManager;
+use crate::flag_register::FlagRegisterManager;
 pub use crate::instructions::decode::Instructions;
 pub use crate::instructions::Instruction;
-pub use crate::memory::MemoryManager;
-pub use crate::register::RegisterManager;
-pub use crate::segment_register::SegmentRegisterManager;
+use crate::memory::MemoryManager;
+use crate::register::RegisterManager;
+use crate::segment_register::SegmentRegisterManager;
+pub use crate::store::Store;
 use byteorder::ReadBytesExt;
 pub use prelude::*;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 
-pub fn simulate(
-    mut reader: BufReader<File>,
-    register_store: &mut RegisterManager,
-    memory_store: &mut MemoryManager,
-    segment_register_store: &mut SegmentRegisterManager,
-    flag_register_store: &mut FlagRegisterManager,
-) {
+pub fn simulate(mut reader: BufReader<File>, store: &mut Store) {
     loop {
         let Ok(instruction_byte) = reader.read_u8() else {
             break;
@@ -32,12 +28,7 @@ pub fn simulate(
 
         let instruction = Instructions::read(&mut reader, instruction_byte);
 
-        instruction.execute(
-            register_store,
-            memory_store,
-            segment_register_store,
-            flag_register_store,
-        );
+        instruction.execute(&reader, store);
     }
 }
 
