@@ -21,7 +21,7 @@ pub enum Instructions {
 }
 
 impl Instruction for Instructions {
-    fn execute(&self, reader: &BufReader<File>, store: &mut Store) {
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) {
         match self {
             Instructions::Mov(instruction) => instruction.execute(reader, store),
             Instructions::Add(instruction) => instruction.execute(reader, store),

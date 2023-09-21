@@ -9,11 +9,11 @@ expression: store.register_store().register_memory_map()
     ),
     (
         "bx",
-        -7934,
+        2000,
     ),
     (
         "cx",
-        3841,
+        -800,
     ),
     (
         "dx",
@@ -21,7 +21,7 @@ expression: store.register_store().register_memory_map()
     ),
     (
         "sp",
-        998,
+        0,
     ),
     (
         "bp",

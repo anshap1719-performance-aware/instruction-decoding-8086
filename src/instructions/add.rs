@@ -55,7 +55,7 @@ impl ArithmeticInstruction for AddInstruction {
 }
 
 impl Instruction for AddInstruction {
-    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
+    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) {
         let AddInstruction(AnyInstruction {
             source,
             destination,

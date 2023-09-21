@@ -1,38 +1,7 @@
 ---
 source: tests/simulation_test.rs
-expression: register_store.register_memory_map()
+expression: reader.stream_position()
 ---
-[
-    (
-        "ax",
-        0,
-    ),
-    (
-        "bx",
-        -7934,
-    ),
-    (
-        "cx",
-        3841,
-    ),
-    (
-        "dx",
-        0,
-    ),
-    (
-        "sp",
-        998,
-    ),
-    (
-        "bp",
-        0,
-    ),
-    (
-        "si",
-        0,
-    ),
-    (
-        "di",
-        0,
-    ),
-]
+Ok(
+    24,
+)

@@ -5,7 +5,7 @@ use crate::store::Store;
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Seek};
 
 #[derive(Copy, Clone, PartialEq)]
 #[allow(clippy::enum_variant_names)]
@@ -354,7 +354,139 @@ impl TryFrom<(Byte, &mut BufReader<File>)> for JumpInstructions {
 }
 
 impl Instruction for JumpInstructions {
-    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
-        todo!()
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) {
+        let (should_jump, displacement) = match self {
+            JumpInstructions::JumpOnEqualOrZero(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnLess(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnLessOrEqual(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnBelow(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnBelowOrEqual(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnParityEven(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnOverflow(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnSign(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotEqualAndNotZero(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotLess(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotLessAndNotEqual(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotBelow(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotBelowAndNotEqual(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnParityOdd(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotOverflow(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnNotSign(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::Loop(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::LoopWhileZeroOrEqual(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::LoopWhileNotZeroAndNotEqual(AnyInstruction {
+                destination, ..
+            }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+            JumpInstructions::JumpOnCxZero(AnyInstruction { destination, .. }) => {
+                let should_jump = false;
+                let displacement = destination.to_immediate_value(true, store);
+
+                (should_jump, displacement)
+            }
+        };
+
+        if should_jump {
+            let displacement: i16 = displacement.into();
+
+            reader.seek_relative(displacement as i64).expect(&format!(
+                "Failed to jump {displacement} from {:?}",
+                reader.stream_position()
+            ));
+        }
     }
 }

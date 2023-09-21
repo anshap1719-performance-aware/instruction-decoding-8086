@@ -43,7 +43,7 @@ impl From<Byte> for MovInstructionTypes {
 pub struct MovInstruction(pub AnyInstruction);
 
 impl Instruction for MovInstruction {
-    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
+    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) {
         let MovInstruction(AnyInstruction {
             source,
             destination,

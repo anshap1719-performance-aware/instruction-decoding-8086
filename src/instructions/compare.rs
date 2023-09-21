@@ -54,7 +54,7 @@ impl ArithmeticInstruction for CompareInstruction {
 }
 
 impl Instruction for CompareInstruction {
-    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
+    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) {
         let CompareInstruction(AnyInstruction {
             source,
             destination,

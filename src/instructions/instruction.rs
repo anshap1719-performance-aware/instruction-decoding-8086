@@ -26,5 +26,5 @@ impl Default for AnyInstruction {
 }
 
 pub trait Instruction {
-    fn execute(&self, reader: &BufReader<File>, store: &mut Store);
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store);
 }

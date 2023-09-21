@@ -1,42 +1,22 @@
 ---
 source: tests/simulation_test.rs
-expression: flag_register_store.flag_register_memory_map()
+expression: store.segment_register_store().segment_register_memory_map()
 ---
 [
     (
-        "carry",
-        false,
+        "es",
+        0,
     ),
     (
-        "parity",
-        false,
+        "cs",
+        0,
     ),
     (
-        "auxiliaryCarry",
-        false,
+        "ss",
+        0,
     ),
     (
-        "zero",
-        false,
-    ),
-    (
-        "sign",
-        false,
-    ),
-    (
-        "trap",
-        false,
-    ),
-    (
-        "interrupt",
-        false,
-    ),
-    (
-        "direction",
-        false,
-    ),
-    (
-        "overflow",
-        false,
+        "ds",
+        0,
     ),
 ]

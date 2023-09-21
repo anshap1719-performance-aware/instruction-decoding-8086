@@ -55,7 +55,7 @@ impl ArithmeticInstruction for SubtractInstruction {
 }
 
 impl Instruction for SubtractInstruction {
-    fn execute(&self, _reader: &BufReader<File>, store: &mut Store) {
+    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) {
         let SubtractInstruction(AnyInstruction {
             source,
             destination,

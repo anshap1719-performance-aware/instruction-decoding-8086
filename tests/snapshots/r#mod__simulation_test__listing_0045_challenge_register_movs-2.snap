@@ -1,22 +1,38 @@
 ---
 source: tests/simulation_test.rs
-expression: segment_register_store.segment_register_memory_map()
+expression: store.register_store().register_memory_map()
 ---
 [
     (
-        "es",
-        26231,
-    ),
-    (
-        "cs",
-        0,
-    ),
-    (
-        "ss",
+        "ax",
         17425,
     ),
     (
-        "ds",
+        "bx",
         13124,
+    ),
+    (
+        "cx",
+        26231,
+    ),
+    (
+        "dx",
+        30600,
+    ),
+    (
+        "sp",
+        17425,
+    ),
+    (
+        "bp",
+        13124,
+    ),
+    (
+        "si",
+        26231,
+    ),
+    (
+        "di",
+        30600,
     ),
 ]

@@ -3,5 +3,5 @@ source: tests/simulation_test.rs
 expression: reader.stream_position()
 ---
 Ok(
-    44,
+    14,
 )
