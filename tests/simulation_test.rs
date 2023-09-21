@@ -36,3 +36,5 @@ test_simulate_listing!(listing_0045_challenge_register_movs);
 test_simulate_listing!(listing_0046_add_sub_cmp);
 test_simulate_listing!(listing_0047_challenge_flags);
 test_simulate_listing!(listing_0048_ip_register);
+test_simulate_listing!(listing_0049_conditional_jumps);
+test_simulate_listing!(listing_0050_challenge_jumps);

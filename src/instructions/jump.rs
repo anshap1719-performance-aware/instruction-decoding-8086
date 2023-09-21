@@ -1,6 +1,10 @@
+use crate::flag_register::FlagRegister;
 use crate::instructions::operands::{ImmediateValue, Operand};
+use crate::instructions::subtract::SubtractInstruction;
 use crate::instructions::{AnyInstruction, Instruction};
+use crate::memory::Memory;
 use crate::prelude::*;
+use crate::register::Register::Cx;
 use crate::store::Store;
 use byteorder::ReadBytesExt;
 use std::fmt::{Display, Formatter};
@@ -355,111 +359,133 @@ impl TryFrom<(Byte, &mut BufReader<File>)> for JumpInstructions {
 
 impl Instruction for JumpInstructions {
     fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) {
+        use FlagRegister::*;
+
         let (should_jump, displacement) = match self {
             JumpInstructions::JumpOnEqualOrZero(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (store.flag_register_store().get_flag(Zero), displacement)
             }
             JumpInstructions::JumpOnLess(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = store.flag_register_store().get_flag(Sign)
+                    ^ store.flag_register_store().get_flag(Overflow);
+
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnLessOrEqual(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = (store.flag_register_store().get_flag(Sign)
+                    ^ store.flag_register_store().get_flag(Overflow))
+                    || store.flag_register_store().get_flag(Zero);
+
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnBelow(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (store.flag_register_store().get_flag(Carry), displacement)
             }
             JumpInstructions::JumpOnBelowOrEqual(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = store.flag_register_store().get_flag(Carry)
+                    || store.flag_register_store().get_flag(Zero);
+
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnParityEven(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (store.flag_register_store().get_flag(Parity), displacement)
             }
             JumpInstructions::JumpOnOverflow(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (store.flag_register_store().get_flag(Overflow), displacement)
             }
             JumpInstructions::JumpOnSign(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (store.flag_register_store().get_flag(Sign), displacement)
             }
             JumpInstructions::JumpOnNotEqualAndNotZero(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (!store.flag_register_store().get_flag(Zero), displacement)
             }
             JumpInstructions::JumpOnNotLess(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = !(store.flag_register_store().get_flag(Sign)
+                    ^ store.flag_register_store().get_flag(Overflow));
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnNotLessAndNotEqual(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = !((store.flag_register_store().get_flag(Sign)
+                    ^ store.flag_register_store().get_flag(Overflow))
+                    || store.flag_register_store().get_flag(Zero));
+
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnNotBelow(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (!store.flag_register_store().get_flag(Carry), displacement)
             }
             JumpInstructions::JumpOnNotBelowAndNotEqual(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let should_jump = !store.flag_register_store().get_flag(Carry)
+                    && !store.flag_register_store().get_flag(Zero);
+
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnParityOdd(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (!store.flag_register_store().get_flag(Parity), displacement)
             }
             JumpInstructions::JumpOnNotOverflow(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (
+                    !store.flag_register_store().get_flag(Overflow),
+                    displacement,
+                )
             }
             JumpInstructions::JumpOnNotSign(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (!store.flag_register_store().get_flag(Sign), displacement)
             }
             JumpInstructions::Loop(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let cx_value: i16 = store.register_store().read_value(Cx).into();
+                let cx_value = cx_value - 1;
+
+                store
+                    .register_store_mut()
+                    .write_word_to_register(Cx, ImmediateValue::SignedWord(cx_value).into());
+
+                let should_jump = cx_value != 0;
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::LoopWhileZeroOrEqual(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let cx_value: i16 = store.register_store().read_value(Cx).into();
+                let cx_value = cx_value - 1;
+
+                store
+                    .register_store_mut()
+                    .write_word_to_register(Cx, ImmediateValue::SignedWord(cx_value).into());
+
+                let should_jump = cx_value != 0 && store.flag_register_store().get_flag(Zero);
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
@@ -467,26 +493,37 @@ impl Instruction for JumpInstructions {
             JumpInstructions::LoopWhileNotZeroAndNotEqual(AnyInstruction {
                 destination, ..
             }) => {
-                let should_jump = false;
+                let cx_value: i16 = store.register_store().read_value(Cx).into();
+                let cx_value = cx_value - 1;
+
+                store
+                    .register_store_mut()
+                    .write_word_to_register(Cx, ImmediateValue::SignedWord(cx_value).into());
+
+                let should_jump = cx_value != 0 && !store.flag_register_store().get_flag(Zero);
                 let displacement = destination.to_immediate_value(true, store);
 
                 (should_jump, displacement)
             }
             JumpInstructions::JumpOnCxZero(AnyInstruction { destination, .. }) => {
-                let should_jump = false;
+                let cx_value: i16 = store.register_store().read_value(Cx).into();
                 let displacement = destination.to_immediate_value(true, store);
 
-                (should_jump, displacement)
+                (cx_value == 0, displacement)
             }
         };
 
         if should_jump {
             let displacement: i16 = displacement.into();
 
-            reader.seek_relative(displacement as i64).expect(&format!(
-                "Failed to jump {displacement} from {:?}",
-                reader.stream_position()
-            ));
+            reader
+                .seek_relative(displacement as i64)
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to jump {displacement} from {:?}",
+                        reader.stream_position()
+                    )
+                });
         }
     }
 }
