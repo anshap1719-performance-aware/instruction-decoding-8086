@@ -10,3 +10,4 @@
 testcase
 output.asm
 output
+*.dump

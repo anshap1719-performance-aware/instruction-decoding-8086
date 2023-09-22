@@ -351,6 +351,10 @@ impl MemoryManager {
             )
         }
     }
+
+    pub fn dump(&self) -> [u8; MAIN_MEMORY_SIZE] {
+        self.memory
+    }
 }
 
 impl Memory<u8, MAIN_MEMORY_SIZE> for MemoryManager {
