@@ -1,3 +1,4 @@
+use crate::cycle::EstimatedCycleCount;
 use crate::instructions::operands::ImmediateValue;
 use crate::mode::InstructionMode;
 use crate::prelude::*;
@@ -15,6 +16,40 @@ pub enum EffectiveAddress {
     RegisterSumPlusByte(Register, Register, SignedByte),
     RegisterSumPlusWord(Register, Register, SignedWord),
     DirectAddress(Word),
+}
+
+impl EstimatedCycleCount for EffectiveAddress {
+    fn num_cycles(&self) -> u32 {
+        use Register::*;
+
+        match self {
+            EffectiveAddress::Register(_) => 5,
+            EffectiveAddress::RegisterSum(base, index) => {
+                if (*base == Bp && *index == Di) || (*base == Bx && *index == Si) {
+                    7
+                } else {
+                    8
+                }
+            }
+            EffectiveAddress::RegisterPlusByte(_, _) => 9,
+            EffectiveAddress::RegisterPlusWord(_, _) => 9,
+            EffectiveAddress::RegisterSumPlusByte(base, index, _) => {
+                if (*base == Bp && *index == Di) || (*base == Bx && *index == Si) {
+                    11
+                } else {
+                    12
+                }
+            }
+            EffectiveAddress::RegisterSumPlusWord(base, index, _) => {
+                if (*base == Bp && *index == Di) || (*base == Bx && *index == Si) {
+                    11
+                } else {
+                    12
+                }
+            }
+            EffectiveAddress::DirectAddress(_) => 6,
+        }
+    }
 }
 
 impl EffectiveAddress {
@@ -40,32 +75,58 @@ impl EffectiveAddress {
             },
             InstructionMode::MemoryPlusByte => {
                 let displacement = reader.read_i8().unwrap();
-
-                match mem_byte {
-                    0b000 => RegisterSumPlusByte(Bx, Si, displacement),
-                    0b001 => RegisterSumPlusByte(Bx, Di, displacement),
-                    0b010 => RegisterSumPlusByte(Bp, Si, displacement),
-                    0b011 => RegisterSumPlusByte(Bp, Di, displacement),
-                    0b100 => RegisterPlusByte(Si, displacement),
-                    0b101 => RegisterPlusByte(Di, displacement),
-                    0b110 => RegisterPlusByte(Bp, displacement),
-                    0b111 => RegisterPlusByte(Bx, displacement),
-                    _ => panic!("Unable to compute effective address"),
+                if displacement == 0 {
+                    match mem_byte {
+                        0b000 => RegisterSum(Bx, Si),
+                        0b001 => RegisterSum(Bx, Di),
+                        0b010 => RegisterSum(Bp, Si),
+                        0b011 => RegisterSum(Bp, Di),
+                        0b100 => Register(Si),
+                        0b101 => Register(Di),
+                        0b110 => Register(Bp),
+                        0b111 => Register(Bx),
+                        _ => panic!("Unable to compute effective address"),
+                    }
+                } else {
+                    match mem_byte {
+                        0b000 => RegisterSumPlusByte(Bx, Si, displacement),
+                        0b001 => RegisterSumPlusByte(Bx, Di, displacement),
+                        0b010 => RegisterSumPlusByte(Bp, Si, displacement),
+                        0b011 => RegisterSumPlusByte(Bp, Di, displacement),
+                        0b100 => RegisterPlusByte(Si, displacement),
+                        0b101 => RegisterPlusByte(Di, displacement),
+                        0b110 => RegisterPlusByte(Bp, displacement),
+                        0b111 => RegisterPlusByte(Bx, displacement),
+                        _ => panic!("Unable to compute effective address"),
+                    }
                 }
             }
             InstructionMode::MemoryPlusWord => {
                 let displacement = reader.read_i16::<LittleEndian>().unwrap();
-
-                match mem_byte {
-                    0b000 => RegisterSumPlusWord(Bx, Si, displacement),
-                    0b001 => RegisterSumPlusWord(Bx, Di, displacement),
-                    0b010 => RegisterSumPlusWord(Bp, Si, displacement),
-                    0b011 => RegisterSumPlusWord(Bp, Di, displacement),
-                    0b100 => RegisterPlusWord(Si, displacement),
-                    0b101 => RegisterPlusWord(Di, displacement),
-                    0b110 => RegisterPlusWord(Bp, displacement),
-                    0b111 => RegisterPlusWord(Bx, displacement),
-                    _ => panic!("Unable to compute effective address"),
+                if displacement == 0 {
+                    match mem_byte {
+                        0b000 => RegisterSum(Bx, Si),
+                        0b001 => RegisterSum(Bx, Di),
+                        0b010 => RegisterSum(Bp, Si),
+                        0b011 => RegisterSum(Bp, Di),
+                        0b100 => Register(Si),
+                        0b101 => Register(Di),
+                        0b110 => Register(Bp),
+                        0b111 => Register(Bx),
+                        _ => panic!("Unable to compute effective address"),
+                    }
+                } else {
+                    match mem_byte {
+                        0b000 => RegisterSumPlusWord(Bx, Si, displacement),
+                        0b001 => RegisterSumPlusWord(Bx, Di, displacement),
+                        0b010 => RegisterSumPlusWord(Bp, Si, displacement),
+                        0b011 => RegisterSumPlusWord(Bp, Di, displacement),
+                        0b100 => RegisterPlusWord(Si, displacement),
+                        0b101 => RegisterPlusWord(Di, displacement),
+                        0b110 => RegisterPlusWord(Bp, displacement),
+                        0b111 => RegisterPlusWord(Bx, displacement),
+                        _ => panic!("Unable to compute effective address"),
+                    }
                 }
             }
             InstructionMode::Register => {
@@ -323,13 +384,13 @@ impl MemoryManager {
         address: EffectiveAddress,
         is_wide: bool,
         register_manager: &RegisterManager,
-    ) -> ImmediateValue {
+    ) -> (ImmediateValue, bool) {
         let address = self.effective_address_to_address(address, register_manager);
 
         if is_wide {
-            self.read_signed_word(address).into()
+            (self.read_signed_word(address).into(), address % 2 != 0)
         } else {
-            self.read_signed_byte(address).into()
+            (self.read_signed_byte(address).into(), false)
         }
     }
 

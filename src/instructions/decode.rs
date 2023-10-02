@@ -1,4 +1,5 @@
 use super::mov::*;
+use crate::cycle::EstimatedCycleCount;
 use crate::instructions::add::AddInstruction;
 use crate::instructions::arithmetic::ArithmeticInstruction;
 use crate::instructions::compare::CompareInstruction;
@@ -20,8 +21,20 @@ pub enum Instructions {
     Jump(JumpInstructions),
 }
 
+impl EstimatedCycleCount for Instructions {
+    fn num_cycles(&self) -> u32 {
+        match self {
+            Instructions::Mov(instruction) => instruction.num_cycles(),
+            Instructions::Add(instruction) => instruction.num_cycles(),
+            Instructions::Sub(instruction) => instruction.num_cycles(),
+            Instructions::Cmp(instruction) => instruction.num_cycles(),
+            Instructions::Jump(instruction) => instruction.num_cycles(),
+        }
+    }
+}
+
 impl Instruction for Instructions {
-    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) {
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) -> u32 {
         match self {
             Instructions::Mov(instruction) => instruction.execute(reader, store),
             Instructions::Add(instruction) => instruction.execute(reader, store),

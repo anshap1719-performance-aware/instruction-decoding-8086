@@ -1,3 +1,4 @@
+use crate::cycle::EstimatedCycleCount;
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
 use crate::memory::EffectiveAddress;
@@ -42,20 +43,44 @@ impl From<Byte> for MovInstructionTypes {
 
 pub struct MovInstruction(pub AnyInstruction);
 
+impl EstimatedCycleCount for MovInstruction {
+    fn num_cycles(&self) -> u32 {
+        use Operand::*;
+
+        match (self.0.destination, self.0.source.unwrap()) {
+            (Register(_), Register(_)) => 2,
+            (Register(_), Memory(ea)) => 8 + ea.num_cycles(),
+            (Memory(ea), Register(_)) => 9 + ea.num_cycles(),
+            (Register(_), Immediate(_)) => 4,
+            (Memory(ea), Immediate(_)) => 10 + ea.num_cycles(),
+            (SegmentRegister(_), Register(_)) => 2,
+            (SegmentRegister(_), Memory(ea)) => 8 + ea.num_cycles(),
+            (Register(_), SegmentRegister(_)) => 2,
+            (Memory(ea), SegmentRegister(_)) => 9 + ea.num_cycles(),
+            (Memory(_), Accumulator | AccumulatorWide) => 10,
+            (Accumulator | AccumulatorWide, Memory(_)) => 10,
+            (Immediate(_), _) => panic!("Cannot move into immediate"),
+            _ => panic!("Invalid MOV operation"),
+        }
+    }
+}
+
 impl Instruction for MovInstruction {
-    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) {
+    fn execute(&self, _reader: &mut BufReader<File>, store: &mut Store) -> u32 {
         let MovInstruction(AnyInstruction {
             source,
             destination,
             ..
         }) = self;
 
-        let value: Option<ImmediateValue> = source
+        let value: Option<(ImmediateValue, bool)> = source
             .as_ref()
             .map(|source| source.to_immediate_value(self.0.is_wide, store));
 
-        if let Some(value) = value {
+        if let Some((value, clock_penalty)) = value {
             destination.write_value(value, self.0.is_wide, store);
+
+            self.num_cycles() + if clock_penalty { 4 } else { 0 }
         } else {
             panic!("Mov instruction expects both a source and a destination");
         }
@@ -129,6 +154,7 @@ impl MovInstruction {
                     } else {
                         register_or_memory
                     },
+                    clock_penalty: None,
                 })
             }
             RegisterOrMemoryToOrFromSegmentRegister => {
@@ -156,6 +182,7 @@ impl MovInstruction {
                     } else {
                         register_or_memory
                     },
+                    clock_penalty: None,
                 })
             }
             ImmediateToRegister => {
@@ -177,6 +204,7 @@ impl MovInstruction {
                     mode: None,
                     source: Some(Operand::Immediate(data)),
                     destination: Operand::Register(Register::from(register_byte)),
+                    clock_penalty: None,
                 })
             }
             MemoryToAccumulator => {
@@ -194,6 +222,7 @@ impl MovInstruction {
                     } else {
                         Operand::Accumulator
                     },
+                    clock_penalty: None,
                 })
             }
             AccumulatorToMemory => {
@@ -209,6 +238,7 @@ impl MovInstruction {
                         Operand::Accumulator
                     }),
                     destination: Operand::Memory(EffectiveAddress::DirectAddress(memory_location)),
+                    clock_penalty: None,
                 })
             }
             ImmediateToRegisterOrMemory => {
@@ -230,6 +260,7 @@ impl MovInstruction {
                     mode: Some(mode),
                     source: Some(Operand::Immediate(data)),
                     destination: register_or_memory,
+                    clock_penalty: None,
                 })
             }
         }

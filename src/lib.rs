@@ -1,3 +1,4 @@
+pub mod cycle;
 pub mod flag_register;
 pub mod helpers;
 mod instructions;
@@ -20,7 +21,9 @@ pub use prelude::*;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 
-pub fn simulate(mut reader: BufReader<File>, store: &mut Store) -> BufReader<File> {
+pub fn simulate(mut reader: BufReader<File>, store: &mut Store) -> (BufReader<File>, u32) {
+    let mut num_cpu_cycles = 0;
+
     loop {
         let Ok(instruction_byte) = reader.read_u8() else {
             break;
@@ -28,10 +31,10 @@ pub fn simulate(mut reader: BufReader<File>, store: &mut Store) -> BufReader<Fil
 
         let instruction = Instructions::read(&mut reader, instruction_byte);
 
-        instruction.execute(&mut reader, store);
+        num_cpu_cycles += instruction.execute(&mut reader, store);
     }
 
-    reader
+    (reader, num_cpu_cycles)
 }
 
 pub fn decode(mut reader: BufReader<File>) -> String {

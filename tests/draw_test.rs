@@ -15,7 +15,7 @@ fn listing_0054_draw_rectangle() {
     let input = File::open(&path).unwrap_or_else(|_| panic!("Failed to open {path:?}"));
 
     let mut reader = BufReader::new(input);
-    reader = instruction_decoding_8086::simulate(reader, store);
+    (reader, _) = instruction_decoding_8086::simulate(reader, store);
 
     File::create("listing_0054_draw_rectangle.dump")
         .unwrap()
@@ -36,7 +36,7 @@ fn listing_0055_challenge_rectangle() {
     let input = File::open(&path).unwrap_or_else(|_| panic!("Failed to open {path:?}"));
 
     let mut reader = BufReader::new(input);
-    reader = instruction_decoding_8086::simulate(reader, store);
+    (reader, _) = instruction_decoding_8086::simulate(reader, store);
 
     File::create("listing_0055_challenge_rectangle.dump")
         .unwrap()

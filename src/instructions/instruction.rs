@@ -1,3 +1,4 @@
+use crate::cycle::EstimatedCycleCount;
 use crate::instructions::operands::Operand;
 use crate::instructions::operands::Operand::AccumulatorWide;
 use crate::mode::InstructionMode;
@@ -12,6 +13,7 @@ pub struct AnyInstruction {
     pub mode: Option<InstructionMode>,
     pub source: Option<Operand>,
     pub destination: Operand,
+    pub clock_penalty: Option<u16>,
 }
 
 impl Default for AnyInstruction {
@@ -21,10 +23,14 @@ impl Default for AnyInstruction {
             mode: None,
             source: None,
             destination: AccumulatorWide,
+            clock_penalty: None,
         }
     }
 }
 
-pub trait Instruction {
-    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store);
+pub trait Instruction
+where
+    Self: EstimatedCycleCount,
+{
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) -> u32;
 }

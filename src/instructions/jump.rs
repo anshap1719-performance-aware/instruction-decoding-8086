@@ -1,3 +1,4 @@
+use crate::cycle::EstimatedCycleCount;
 use crate::flag_register::FlagRegister;
 use crate::instructions::operands::{ImmediateValue, Operand};
 use crate::instructions::{AnyInstruction, Instruction};
@@ -355,11 +356,38 @@ impl TryFrom<(Byte, &mut BufReader<File>)> for JumpInstructions {
     }
 }
 
+impl EstimatedCycleCount for JumpInstructions {
+    fn num_cycles(&self) -> u32 {
+        match self {
+            JumpInstructions::JumpOnEqualOrZero(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnLess(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnLessOrEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnBelow(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnBelowOrEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnParityEven(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnOverflow(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnSign(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotEqualAndNotZero(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotLess(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotLessAndNotEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotBelow(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotBelowAndNotEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnParityOdd(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotOverflow(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnNotSign(AnyInstruction { .. }) => 16,
+            JumpInstructions::Loop(AnyInstruction { .. }) => 16,
+            JumpInstructions::LoopWhileZeroOrEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::LoopWhileNotZeroAndNotEqual(AnyInstruction { .. }) => 16,
+            JumpInstructions::JumpOnCxZero(AnyInstruction { .. }) => 16,
+        }
+    }
+}
+
 impl Instruction for JumpInstructions {
-    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) {
+    fn execute(&self, reader: &mut BufReader<File>, store: &mut Store) -> u32 {
         use FlagRegister::*;
 
-        let (should_jump, displacement) = match self {
+        let (should_jump, (displacement, clock_penalty)) = match self {
             JumpInstructions::JumpOnEqualOrZero(AnyInstruction { destination, .. }) => {
                 let displacement = destination.to_immediate_value(true, store);
 
@@ -523,5 +551,7 @@ impl Instruction for JumpInstructions {
                     )
                 });
         }
+
+        self.num_cycles() + if clock_penalty { 4 } else { 0 }
     }
 }

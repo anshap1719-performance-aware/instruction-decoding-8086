@@ -110,6 +110,27 @@ impl Register {
             Di => 14,
         }
     }
+
+    pub fn is_wide(&self) -> bool {
+        match self {
+            Al => false,
+            Ax => true,
+            Cl => false,
+            Cx => true,
+            Dl => false,
+            Dx => true,
+            Bl => false,
+            Bx => true,
+            Ah => false,
+            Sp => true,
+            Ch => false,
+            Bp => true,
+            Dh => false,
+            Si => true,
+            Bh => false,
+            Di => true,
+        }
+    }
 }
 
 impl Memory<u8, REGISTERS_MEMORY_SIZE> for RegisterManager {

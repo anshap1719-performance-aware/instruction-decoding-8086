@@ -351,29 +351,41 @@ impl Operand {
         }
     }
 
-    pub fn to_immediate_value(self, is_wide_op: bool, store: &mut Store) -> ImmediateValue {
+    pub fn to_immediate_value(self, is_wide_op: bool, store: &mut Store) -> (ImmediateValue, bool) {
         match self {
-            Operand::Accumulator => ImmediateValue::SignedByte(i8::from_le_bytes([store
-                .register_store()
-                .read_byte_from_register(Register::Al)])),
-            Operand::AccumulatorWide => ImmediateValue::SignedWord(i16::from_le_bytes(
-                store
+            Operand::Accumulator => (
+                ImmediateValue::SignedByte(i8::from_le_bytes([store
                     .register_store()
-                    .read_word_from_register(Register::Ax)
-                    .to_le_bytes(),
-            )),
+                    .read_byte_from_register(Register::Al)])),
+                false,
+            ),
+            Operand::AccumulatorWide => (
+                ImmediateValue::SignedWord(i16::from_le_bytes(
+                    store
+                        .register_store()
+                        .read_word_from_register(Register::Ax)
+                        .to_le_bytes(),
+                )),
+                false,
+            ),
             Operand::Register(register) => {
                 if is_wide_op {
-                    ImmediateValue::SignedWord(i16::from_le_bytes(
-                        store
-                            .register_store()
-                            .read_word_from_register(register)
-                            .to_le_bytes(),
-                    ))
+                    (
+                        ImmediateValue::SignedWord(i16::from_le_bytes(
+                            store
+                                .register_store()
+                                .read_word_from_register(register)
+                                .to_le_bytes(),
+                        )),
+                        false,
+                    )
                 } else {
-                    ImmediateValue::SignedByte(i8::from_le_bytes([store
-                        .register_store()
-                        .read_byte_from_register(register)]))
+                    (
+                        ImmediateValue::SignedByte(i8::from_le_bytes([store
+                            .register_store()
+                            .read_byte_from_register(register)])),
+                        false,
+                    )
                 }
             }
             Operand::Memory(address) => store.memory_store().read_memory_from_effective_address(
@@ -381,21 +393,27 @@ impl Operand {
                 is_wide_op,
                 store.register_store(),
             ),
-            Operand::Immediate(immediate_value) => immediate_value,
+            Operand::Immediate(immediate_value) => (immediate_value, false),
             Operand::SegmentRegister(register) => {
                 if is_wide_op {
-                    ImmediateValue::SignedWord(
-                        store
-                            .segment_register_store()
-                            .read_word_from_segment_register(register)
-                            as i16,
+                    (
+                        ImmediateValue::SignedWord(
+                            store
+                                .segment_register_store()
+                                .read_word_from_segment_register(register)
+                                as i16,
+                        ),
+                        false,
                     )
                 } else {
-                    ImmediateValue::SignedByte(
-                        store
-                            .segment_register_store()
-                            .read_byte_from_segment_register(register)
-                            as i8,
+                    (
+                        ImmediateValue::SignedByte(
+                            store
+                                .segment_register_store()
+                                .read_byte_from_segment_register(register)
+                                as i8,
+                        ),
+                        false,
                     )
                 }
             }

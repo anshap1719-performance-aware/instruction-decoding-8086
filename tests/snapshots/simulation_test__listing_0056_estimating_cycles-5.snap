@@ -1,0 +1,5 @@
+---
+source: tests/simulation_test.rs
+expression: num_cpu_cycles.to_string()
+---
+192
